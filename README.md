@@ -34,7 +34,7 @@ with plain commands like `ping pc2 pc1` and `rules load`. No `docker` typing. Fo
 | [00](modules/module-00-setup/) | Environment setup (install Docker, smoke test) | docs | `module-00-setup/README.md` |
 | 01 | Access control & isolation | *planned* | — |
 | 02 | Port scanning & enumeration | *planned* | — |
-| 03 | Password attacks | *planned* | — |
+| **[03](modules/module-03-password-attacks/)** | **Password attacks (John the Ripper, fcrackzip)** | **ready** | `module-03-password-attacks/LAB-GUIDE.md` |
 | 04 | Cryptography | *planned* | — |
 | 05 | Risk management (in-browser calculator) | *planned* | — |
 | 06 | Packet capture & analysis (Wireshark-in-browser) | *planned* | — |
@@ -69,6 +69,21 @@ make build-base      # builds base.Dockerfile, tags it as the GHCR image name
 > **Note for external/exFAT drives (macOS):** this drive writes AppleDouble `._*` sidecar files
 > that break BuildKit's context transfer (`failed to xattr … operation not permitted`). If a
 > local build fails that way, use the legacy builder: `DOCKER_BUILDKIT=0 make build-base`.
+
+## Data & portability
+
+The shipped labs use **no host bind mounts**, so they run identically on macOS, Windows, and Linux —
+including from an external/exFAT drive. Two approaches carry lab data:
+
+- **Small data** (hashes, wordlists, configs, small archives — under ~1 MB): **baked into the module
+  image**. Negligible size, pulls cleanly from GHCR, zero mount issues.
+- **Large data** (packet captures, disk/memory images, in later modules): a **named Docker volume
+  populated at runtime**, never a host bind mount. Named volumes live inside Docker's own storage, so
+  they sidestep host file-sharing quirks on every OS.
+
+> **Developing on an external/exFAT drive (macOS)?** Docker Desktop's file-sharing can't bind-mount
+> such paths and BuildKit trips on macOS `._*` sidecar files. This only affects *building here* — not
+> students, who pull prebuilt images. Use `DOCKER_BUILDKIT=0` for local builds if one fails.
 
 ## Licence
 

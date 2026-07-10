@@ -1,155 +1,140 @@
 #!/usr/bin/env bash
 # ---------------------------------------------------------------------------
-# Assume Breach Labs — immersive console.
+# Assume Breach Labs — immersive console (module-aware core).
 #
-# Hides Docker entirely. The student "logs in" and drives the whole lab with
-# plain-English commands. The REAL security tools still run underneath, shown
-# behind a simulated host prompt (e.g. "[pc2] $ ping 10.1.1.2"), so students
-# learn ping / iptables / dig by seeing them — they just never touch `docker`.
+# Hides Docker. The student "logs in" and drives a lab with plain commands. The
+# REAL security tools still run underneath, shown behind a simulated host prompt
+# (e.g. "[pc2] $ ping 10.1.1.2"), so students learn the real tools — they just
+# never touch `docker`.
 #
-# Launched by ./start.sh. Module defaults to 07 (Firewalls).
+# The core here is generic. Each module supplies a descriptor file
+#   modules/module-NN-*/console.env
+# that defines its machines and its commands. Contract for console.env:
+#   Vars:  MODULE_NO, MODULE_TITLE, MODULE_SUBTITLE, HOSTS, UP_CHECK
+#   Funcs: host_ip <name>       -> prints the machine's IP (or empty)
+#          topology             -> prints the network/΄setup diagram
+#          module_help          -> prints the module's command list
+#          module_dispatch v .. -> handle a module command; return 1 if unknown
+#   May call core helpers: on_host, host_container, run, and the C_* colours.
+#
+# Launched by ./start.sh.  Pick a module with LAB_MODULE=NN, else you get a menu.
 # ---------------------------------------------------------------------------
 set -uo pipefail
 
-MODULE="${LAB_MODULE:-07}"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOGFILE="$(mktemp -t lab-console.XXXXXX)"
 
 C_TITLE='\033[1;36m'; C_OK='\033[0;32m'; C_WARN='\033[1;33m'
 C_ERR='\033[0;31m'; C_DIM='\033[0;90m'; C_PROMPT='\033[1;35m'; NC='\033[0m'
 
-# --- host table (Module 07) ------------------------------------------------
-host_ip() {
-    case "$1" in
-        pc1) echo 10.1.1.2 ;;  pc2) echo 10.1.2.3 ;;
-        pc3) echo 10.1.2.4 ;;  pc4) echo 10.1.2.5 ;;
-        dns) echo 10.1.1.253 ;; firewall|fw) echo 10.1.1.254 ;;
-        *) echo "" ;;
-    esac
+# --- core helpers available to modules ------------------------------------
+host_container() { echo "m${MODULE_NO}-$1"; }
+
+# Run a real command on a host, shown behind a simulated host prompt (no docker)
+on_host() {
+    local host="$1"; shift
+    printf "${C_DIM}[%s] \$ %s${NC}\n" "$host" "$*"
+    docker exec "$(host_container "$host")" "$@" 2>&1 || true
 }
-HOSTS="pc1 pc2 pc3 pc4 firewall dns"
+run() { printf "${C_DIM}\$ %s${NC}\n" "$*"; "$@"; }
 
-banner() {
-    printf "${C_TITLE}"
-    cat <<'EOF'
+# --- module discovery / selection -----------------------------------------
+descriptor_for() { ls "$PROJECT_ROOT"/modules/module-"$1"-*/console.env 2>/dev/null | head -1; }
 
-  +===================================================================+
-  |                                                                   |
-  |        A S S U M E   B R E A C H   —   S E C U R I T Y   L A B     |
-  |                                                                   |
-  |             Network Security Workstation  ·  Module 07            |
-  |                        Firewalls & Filtering                      |
-  |                                                                   |
-  +===================================================================+
-EOF
-    printf "${NC}\n"
+list_modules() {
+    for f in "$PROJECT_ROOT"/modules/module-*/console.env; do
+        [ -f "$f" ] || continue
+        local no title
+        no="$(sed -n 's/^MODULE_NO=//p' "$f" | tr -d '\"' | head -1)"
+        title="$(sed -n 's/^MODULE_TITLE=//p' "$f" | tr -d '\"' | head -1)"
+        printf "%s|%s\n" "$no" "$title"
+    done | sort
 }
 
+choose_module() {
+    if [ -n "${LAB_MODULE:-}" ]; then echo "$LAB_MODULE"; return; fi
+    local mods; mods="$(list_modules)"
+    local count; count="$(printf "%s\n" "$mods" | grep -c '|' || true)"
+    if [ "$count" -le 1 ]; then printf "%s\n" "$mods" | cut -d'|' -f1; return; fi
+    if [ ! -t 0 ]; then printf "%s\n" "$mods" | head -1 | cut -d'|' -f1; return; fi
+    printf "${C_TITLE}Available labs:${NC}\n" >&2
+    printf "%s\n" "$mods" | while IFS='|' read -r no title; do
+        printf "   ${C_PROMPT}%s${NC}  %s\n" "$no" "$title" >&2
+    done
+    local pick
+    read -r -p "$(printf "Which module? (e.g. 03): ")" pick >&2
+    echo "$pick"
+}
+
+# --- generic lifecycle -----------------------------------------------------
 need_docker() {
     if ! command -v docker >/dev/null 2>&1; then
-        printf "${C_ERR}Docker is not installed.${NC}\n"
-        printf "Install Docker Desktop: https://www.docker.com/products/docker-desktop\n"
-        exit 1
+        printf "${C_ERR}Docker is not installed.${NC}  https://www.docker.com/products/docker-desktop\n"; exit 1
     fi
     if ! docker info >/dev/null 2>&1; then
-        printf "${C_ERR}Docker is not running.${NC} Start Docker Desktop and try again.\n"
-        exit 1
+        printf "${C_ERR}Docker is not running.${NC} Start Docker Desktop and try again.\n"; exit 1
     fi
 }
 
-lab_is_up() { [ -n "$(docker ps -q --filter name=m07-firewall 2>/dev/null)" ]; }
+lab_is_up() { [ -n "$(docker ps -q --filter "name=${UP_CHECK}" 2>/dev/null)" ]; }
 
 bring_up() {
-    if lab_is_up; then
-        printf "${C_OK}Lab already running.${NC}\n"; return
-    fi
-    printf "${C_DIM}Connecting to the lab network...${NC}\n"; sleep 1
-    printf "${C_DIM}Powering on workstations and firewall...${NC}\n"
-    # Build the shared image ONCE (all module-07 services share one image tag;
-    # building per-service in parallel races on the legacy builder), then start.
+    if lab_is_up; then printf "${C_OK}Lab already running.${NC}\n"; return; fi
+    printf "${C_DIM}Connecting to the lab...${NC}\n"; sleep 1
+    printf "${C_DIM}Powering on the machines...${NC}\n"
+    # Build first (separate from up) to avoid the legacy builder racing when
+    # several services share one image tag; then start without --build.
     (
         cd "$PROJECT_ROOT"
-        docker compose --profile "module-${MODULE}" build m07-firewall \
-            && docker compose --profile "module-${MODULE}" up -d
+        docker compose --profile "module-${MODULE_NO}" build \
+            && docker compose --profile "module-${MODULE_NO}" up -d
     ) >"$LOGFILE" 2>&1 &
     local pid=$!
     while kill -0 "$pid" 2>/dev/null; do printf "."; sleep 1; done
     printf "\n"
     if ! wait "$pid" || ! lab_is_up; then
-        printf "${C_ERR}Could not start the lab. Details:${NC}\n"
-        tail -n 15 "$LOGFILE"; exit 1
+        printf "${C_ERR}Could not start the lab. Details:${NC}\n"; tail -n 15 "$LOGFILE"; exit 1
     fi
     printf "${C_OK}Connection established. You are logged in.${NC}\n"
 }
 
-topology() {
-    cat <<'EOF'
-
-        INSIDE  (protected)              OUTSIDE  (other staff)
-     +------------------------+       +--------------------------+
-     |  pc1   10.1.1.2        |  FW   |  pc2   10.1.2.3          |
-     |  dns   10.1.1.253      | ----- |  pc3   10.1.2.4          |
-     |                        |       |  pc4   10.1.2.5          |
-     +------------------------+       +--------------------------+
-        The firewall (FW) routes and filters traffic between the two sides.
-EOF
-}
-
-show_help() {
+banner() {
+    printf "${C_TITLE}"
     cat <<EOF
 
-  Commands (type them at the lab> prompt):
-    ${C_PROMPT}ping <from> <to>${NC}     e.g.  ping pc2 pc1     — ping one host from another
-    ${C_PROMPT}connect <host>${NC}       e.g.  connect pc2      — open a shell ON that host
-    ${C_PROMPT}rules load${NC}                              — apply the teaching firewall rules
-    ${C_PROMPT}rules show${NC}                              — list the current firewall rules
-    ${C_PROMPT}rules clear${NC}                             — remove all firewall rules
-    ${C_PROMPT}dns <name>${NC}          e.g.  dns coke.dreamland.com.au  — look up a name
-    ${C_PROMPT}map${NC}                                     — show the network diagram
-    ${C_PROMPT}hosts${NC}                                   — list the machines
-    ${C_PROMPT}guide${NC}                                   — where to find the lab guide
-    ${C_PROMPT}help${NC}                                    — this list
-    ${C_PROMPT}quit${NC}                                    — leave the lab
+  +===================================================================+
+  |          A S S U M E   B R E A C H   —   S E C U R I T Y   L A B   |
+  |                                                                   |
+  |   ${MODULE_SUBTITLE}
+  |   Module ${MODULE_NO}: ${MODULE_TITLE}
+  +===================================================================+
 EOF
-    printf "\n"
-}
-
-# Run a real command on a host, shown behind a simulated host prompt (no docker visible)
-on_host() {
-    local host="$1"; shift
-    printf "${C_DIM}[%s] \$ %s${NC}\n" "$host" "$*"
-    docker exec "m07-${host}" "$@" 2>&1 || true
-}
-
-do_ping() {
-    local from="$1" to="${2:-}"
-    local ip; ip="$(host_ip "${to}")"
-    if [ -z "${to}" ] || [ -z "$ip" ]; then printf "${C_ERR}usage: ping <from> <to>   (hosts: %s)${NC}\n" "$HOSTS"; return; fi
-    if [ -z "$(host_ip "$from")" ]; then printf "${C_ERR}unknown host: %s${NC}\n" "$from"; return; fi
-    on_host "$from" ping -c3 -W2 "$ip"
-}
-
-do_rules() {
-    case "${1:-show}" in
-        load|reset) on_host firewall /rules/rules.sh ;;
-        show)       on_host firewall iptables -L FORWARD -n -v --line-numbers ;;
-        clear)      on_host firewall iptables -F FORWARD; printf "${C_OK}Firewall rules cleared (all traffic now allowed).${NC}\n" ;;
-        *)          printf "${C_ERR}usage: rules load|show|clear${NC}\n" ;;
-    esac
+    printf "${NC}\n"
 }
 
 do_connect() {
     local host="${1:-}"
-    if [ -z "$(host_ip "$host")" ]; then printf "${C_ERR}unknown host: %s (try: %s)${NC}\n" "$host" "$HOSTS"; return; fi
+    if ! printf " %s " "$HOSTS" | grep -q " $host "; then
+        printf "${C_ERR}unknown host: %s  (try: %s)${NC}\n" "$host" "$HOSTS"; return
+    fi
     printf "${C_DIM}Opening a session on %s. Type 'exit' to return to the lab console.${NC}\n" "$host"
-    docker exec -it -e "PS1=[$host] \$ " "m07-${host}" bash --norc 2>/dev/null \
-        || docker exec -it "m07-${host}" sh
+    docker exec -it -e "PS1=[$host] \$ " "$(host_container "$host")" bash --norc 2>/dev/null \
+        || docker exec -it "$(host_container "$host")" sh
 }
 
-do_dns() {
-    local name="${1:-}"
-    [ -n "$name" ] || { printf "${C_ERR}usage: dns <name>${NC}\n"; return; }
-    on_host pc1 getent hosts "$name"
+show_help() {
+    module_help
+    cat <<EOF
+
+  Always available:
+    ${C_PROMPT}connect <host>${NC}   open a shell on a machine (${HOSTS})
+    ${C_PROMPT}map${NC}              show the setup diagram
+    ${C_PROMPT}hosts${NC}            list the machines
+    ${C_PROMPT}guide${NC}            where to find this module's lab guide
+    ${C_PROMPT}help${NC}             this list
+    ${C_PROMPT}quit${NC}             leave the lab
+EOF
+    printf "\n"
 }
 
 teardown_prompt() {
@@ -163,28 +148,24 @@ teardown_prompt() {
 }
 
 repl() {
-    printf "\n${C_OK}Welcome%s.${NC} You are at the network security console.\n" \
-        "${ANALYST:+, $ANALYST}"
+    printf "\n${C_OK}Welcome%s.${NC} You are logged in.\n" "${ANALYST:+, $ANALYST}"
     topology
-    printf "\nType ${C_PROMPT}help${NC} for commands, or start with:  ${C_PROMPT}rules show${NC}\n\n"
+    printf "\nType ${C_PROMPT}help${NC} for commands.\n\n"
     while true; do
         printf "${C_PROMPT}lab>${NC} "
         if ! read -r line; then break; fi
         # shellcheck disable=SC2086
         set -- $line
-        cmd="${1:-}"; [ $# -gt 0 ] && shift || true
+        local cmd="${1:-}"; [ $# -gt 0 ] && shift || true
         case "$cmd" in
             "")        : ;;
-            ping)      do_ping "${1:-}" "${2:-}" ;;
             connect|ssh) do_connect "${1:-}" ;;
-            rules)     do_rules "${1:-show}" ;;
-            dns)       do_dns "${1:-}" ;;
             map)       topology ;;
             hosts)     printf "  %s\n" "$HOSTS" ;;
-            guide)     printf "  modules/module-07-firewalls/LAB-GUIDE.md\n" ;;
+            guide)     printf "  %s\n" "$GUIDE_PATH" ;;
             help|\?)   show_help ;;
             quit|exit|logout) break ;;
-            *)         printf "${C_ERR}unknown command: %s${NC}  (type 'help')\n" "$cmd" ;;
+            *)         module_dispatch "$cmd" "$@" || printf "${C_ERR}unknown command: %s${NC}  (type 'help')\n" "$cmd" ;;
         esac
     done
     teardown_prompt
@@ -192,6 +173,18 @@ repl() {
 
 # --- main ------------------------------------------------------------------
 ANALYST="${1:-}"
+MODULE_NO="$(choose_module)"
+DESC="$(descriptor_for "$MODULE_NO")"
+if [ -z "$DESC" ] || [ ! -f "$DESC" ]; then
+    printf "${C_ERR}No such module: %s${NC}\n" "$MODULE_NO"
+    printf "Available:\n"; list_modules | sed 's/|/  /'
+    exit 1
+fi
+# shellcheck source=/dev/null
+. "$DESC"
+GUIDE_PATH="$(dirname "$DESC")/LAB-GUIDE.md"
+GUIDE_PATH="${GUIDE_PATH#"$PROJECT_ROOT"/}"
+
 banner
 need_docker
 if [ -z "$ANALYST" ] && [ -t 0 ]; then

@@ -1,0 +1,54 @@
+name: Build module images
+
+# Builds the per-module images and publishes them to GHCR, so students pull them
+# instead of building locally:
+#   ghcr.io/<owner>/assume-breach-node       (Module 07 firewall/workstations/DNS)
+#   ghcr.io/<owner>/assume-breach-cracking   (Module 03 cracking workstation)
+# The base image is built separately by build-base.yml; assume-breach-cracking is
+# FROM that base, so this workflow runs after it.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - modules/module-07-firewalls/**
+      - modules/module-03-password-attacks/**
+      - .github/workflows/build-modules.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: assume-breach-node
+            context: modules/module-07-firewalls
+            file: modules/module-07-firewalls/node/Dockerfile
+          - name: assume-breach-cracking
+            context: modules/module-03-password-attacks/station
+            file: modules/module-03-password-attacks/station/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push ${{ matrix.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

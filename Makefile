@@ -27,10 +27,13 @@ build-base:
 # --- Module runners -------------------------------------------------------
 # Each starts exactly one module's profile from the single docker-compose.yml.
 
+# Build first, then up (no --build): several services can share one image tag,
+# and the legacy builder races if it builds them in parallel during `up --build`.
 define RUN_MODULE
 	@echo "==> Starting module $(1)"
-	$(COMPOSE) --profile module-$(1) up -d --build
-	@echo "==> Up. See modules/module-$(1)-*/LAB-GUIDE.md"
+	$(COMPOSE) --profile module-$(1) build
+	$(COMPOSE) --profile module-$(1) up -d
+	@echo "==> Up. See modules/module-$(1)-*/LAB-GUIDE.md  (or use ./start.sh)"
 endef
 
 m00:
@@ -41,7 +44,7 @@ m01:
 m02:
 	@echo "Module 02 not built yet."
 m03:
-	@echo "Module 03 not built yet."
+	$(call RUN_MODULE,03)
 m04:
 	@echo "Module 04 not built yet."
 m05:
@@ -59,10 +62,11 @@ stop:
 	$(COMPOSE) stop
 
 down:
-	$(COMPOSE) --profile module-07 down --remove-orphans
+	$(COMPOSE) --profile module-03 --profile module-07 down --remove-orphans
 
 status:
 	@echo "Assume Breach Labs — module availability:"
 	@echo "  module-00: setup docs (modules/module-00-setup/README.md)"
-	@echo "  module-07: ready       (make m07)"
+	@echo "  module-03: ready       (make m03  /  ./start.sh)"
+	@echo "  module-07: ready       (make m07  /  ./start.sh)"
 	@echo "  others:    planned"

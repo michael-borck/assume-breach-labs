@@ -7,8 +7,28 @@
 #
 # As more modules are built, add their services here under a new profile and a
 # new network block. Keep network names + subnets unique across the whole file.
+#
+# DATA POLICY (see docs note in README): small lab data (<~1MB) is BAKED into the
+# module image — portable everywhere, no host bind mounts. Large data (pcaps, disk
+# images) will use a NAMED VOLUME populated at runtime, never a host bind mount,
+# so it works on macOS/exFAT, Windows and Linux alike.
 
 services:
+
+  # ======================================================================
+  # Module 03 — Password Attacks. A self-contained cracking workstation
+  # (John the Ripper, fcrackzip) with hashes, a wordlist, and an encrypted
+  # zip baked into the image (~10 KB of data). No target network needed.
+  # ======================================================================
+  m03-station:
+    build:
+      context: ./modules/module-03-password-attacks/station
+      dockerfile: Dockerfile
+    image: ghcr.io/michael-borck/assume-breach-cracking:latest
+    container_name: m03-station
+    hostname: station
+    profiles: ["module-03"]
+    command: ["sleep", "infinity"]
 
   # ======================================================================
   # Module 07 — Firewalls (replaces the Windows-only iNetworkSimulator with
@@ -29,7 +49,7 @@ services:
     build:
       context: ./modules/module-07-firewalls
       dockerfile: node/Dockerfile
-    image: assume-breach-node:latest
+    image: ghcr.io/michael-borck/assume-breach-node:latest
     container_name: m07-firewall
     hostname: firewall
     profiles: ["module-07"]
@@ -44,7 +64,7 @@ services:
         ipv4_address: 10.1.2.254
 
   m07-pc1:
-    image: assume-breach-node:latest
+    image: ghcr.io/michael-borck/assume-breach-node:latest
     build:
       context: ./modules/module-07-firewalls
       dockerfile: node/Dockerfile
@@ -63,7 +83,7 @@ services:
         ipv4_address: 10.1.1.2
 
   m07-pc2:
-    image: assume-breach-node:latest
+    image: ghcr.io/michael-borck/assume-breach-node:latest
     build:
       context: ./modules/module-07-firewalls
       dockerfile: node/Dockerfile
@@ -81,7 +101,7 @@ services:
         ipv4_address: 10.1.2.3
 
   m07-pc3:
-    image: assume-breach-node:latest
+    image: ghcr.io/michael-borck/assume-breach-node:latest
     build:
       context: ./modules/module-07-firewalls
       dockerfile: node/Dockerfile
@@ -99,7 +119,7 @@ services:
         ipv4_address: 10.1.2.4
 
   m07-pc4:
-    image: assume-breach-node:latest
+    image: ghcr.io/michael-borck/assume-breach-node:latest
     build:
       context: ./modules/module-07-firewalls
       dockerfile: node/Dockerfile
@@ -117,7 +137,7 @@ services:
         ipv4_address: 10.1.2.5
 
   m07-dns:
-    image: assume-breach-node:latest
+    image: ghcr.io/michael-borck/assume-breach-node:latest
     build:
       context: ./modules/module-07-firewalls
       dockerfile: node/Dockerfile
