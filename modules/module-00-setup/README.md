@@ -42,25 +42,27 @@ make pull-base
 ## 4. Smoke-test a lab
 
 ```bash
-make status      # see which modules are ready
-make m07         # start the firewall lab
-docker ps        # you should see the m07-* containers running
-make stop        # stop them again
+./start.sh       # on Windows: double-click start.bat, or `bash start.sh` in Git Bash
 ```
 
-If `docker ps` shows the containers, your environment is ready.
+You should see a welcome banner, the machines powering on, and a `lab>` prompt. Type `help`, then
+`quit` (answer `y` to shut down). If you got the `lab>` prompt, your environment is ready.
 
 ## 5. How a lab works
 
-- **Start** a module with `make mNN` (e.g. `make m07`). It brings up only that module's containers.
-- **Enter** a container to work in it:
-  ```bash
-  docker exec -it m07-pc1 bash      # or sh, depending on the image
-  ```
-- **Read** that module's `LAB-GUIDE.md` and follow the steps.
-- **Record** your answers/screenshots for the passport prompts at the end of each guide — those
-  are what you submit for the lab journal.
-- **Stop** with `make stop`, or fully clean up with `make down`.
+You drive labs from the **lab console** — you never type Docker commands.
+
+- **Start:** `./start.sh` logs you in and powers on that module's machines.
+- **Work:** at the `lab>` prompt, use plain commands — `ping pc2 pc1`, `rules load`, `connect pc3`.
+  Type `help` for the list. Each command shows the real tool it runs, so you learn the real thing.
+- **Follow** the module's `LAB-GUIDE.md` step by step.
+- **Record** your answers/screenshots for the passport prompts at the end of each guide — that's
+  what you submit for the lab journal.
+- **Leave:** type `quit` (you'll be asked whether to shut the machines down).
+
+> Curious what's underneath, or an instructor? The Makefile exposes the raw controls
+> (`make m07`, `make status`, `make stop`), and each guide ends with an "Under the hood" section
+> listing the real commands.
 
 ## Troubleshooting
 

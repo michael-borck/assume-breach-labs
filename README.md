@@ -10,19 +10,22 @@ one small exception) no dependence on external websites. The practical companion
 
 ## Quick start
 
+You don't need to know Docker. Install Docker Desktop (see
+[`modules/module-00-setup`](modules/module-00-setup/)), then:
+
 ```bash
-# 1. Install Docker Desktop (or Docker Engine + Compose v2). See modules/module-00-setup.
-# 2. Pull the shared toolbox image (or build it locally — see below).
-make pull-base
-# 3. Start a module (example: the firewall lab).
-make m07
-# 4. Read that module's guide and work through it.
-#    modules/module-07-firewalls/LAB-GUIDE.md
-# 5. Stop everything when done.
-make stop
+./start.sh
 ```
 
-Run `make status` to see which modules are ready, and `make help` for all targets.
+(On Windows: double-click `start.bat`, or run `bash start.sh` in Git Bash.)
+
+That "logs you in" to an immersive lab console — the machines power on and you drive the whole lab
+with plain commands like `ping pc2 pc1` and `rules load`. No `docker` typing. Follow the module's
+`LAB-GUIDE.md`. Type `quit` to leave.
+
+> **Choosing a module:** `./start.sh` opens Module 07 by default. Pick another with
+> `LAB_MODULE=07 ./start.sh`. Instructors can also use the Makefile directly (`make m07`,
+> `make status`, `make help`).
 
 ## Modules
 

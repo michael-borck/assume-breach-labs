@@ -1,233 +1,239 @@
 # Module 07 — Firewalls (Lab Guide)
 
-**Replaces:** the Windows-only *iNetworkSimulator* firewall lab.
-**You will use:** real `iptables` on real (containerised) Linux hosts — the same tool used in
-production, not a simulator.
+**What this replaces:** the old Windows-only *iNetworkSimulator* firewall lab.
+**What you actually use:** a real firewall (`iptables`) on real Linux machines — the same
+technology that protects real networks, not a simulation.
+
+You drive everything from a single **lab console**. You will *not* type any Docker commands: you
+log in, and then use plain commands like `ping pc2 pc1` and `rules load`. The console shows you the
+real command it runs on each machine (e.g. `[pc2] $ ping 10.1.1.2`) so you still learn the real
+tools — see [Under the hood](#under-the-hood-the-real-commands) at the end.
 
 ## Lab Scenario
 
-A small network is split into an **inside** segment (one protected workstation) and an **outside**
-segment (three other workstations). A **firewall** sits between them and routes traffic. Your job is
-to see how firewall rules decide which traffic reaches the protected host, and — crucially — how the
-**order** of rules and the **choice between DROP and REJECT** change what a user experiences.
+A small office network is split in two. The **inside** holds one protected workstation (`pc1`). The
+**outside** holds three other staff machines (`pc2`, `pc3`, `pc4`). A **firewall** sits between them
+and decides which traffic is allowed through. Your job: see how firewall rules — and the *order* you
+write them in — control who can reach the protected machine, and understand the difference between
+**dropping** traffic silently and **rejecting** it with a message.
 
 ```
-        inside 10.1.1.0/24                     outside 10.1.2.0/24
-     +-----------------------+             +--------------------------+
-     |  pc1   10.1.1.2       |             |  pc2   10.1.2.3          |
-     |  dns   10.1.1.253     |   FIREWALL  |  pc3   10.1.2.4          |
-     |                       |  .254 | .254|  pc4   10.1.2.5          |
-     +-----------------------+-------------+--------------------------+
-                       routes + filters ICMP between the two nets
+        INSIDE  (protected)              OUTSIDE  (other staff)
+     +------------------------+       +--------------------------+
+     |  pc1   10.1.1.2        |  FW   |  pc2   10.1.2.3          |
+     |  dns   10.1.1.253      | ----- |  pc3   10.1.2.4          |
+     |                        |       |  pc4   10.1.2.5          |
+     +------------------------+       +--------------------------+
+        The firewall routes and filters traffic between the two sides.
 ```
 
-## Pre-Lab Setup
+## Getting in
 
-From the repo root:
+From the repo folder, run:
 
 ```bash
-make m07            # builds the tiny node image (first run) and starts 6 containers
-docker ps           # confirm: m07-firewall, m07-pc1..pc4, m07-dns
+./start.sh
 ```
 
-Open a few terminals — one per host you're working on. To enter a host:
+(On Windows: double-click `start.bat`, or run `bash start.sh` in Git Bash.)
 
-```bash
-docker exec -it m07-pc1 sh        # the workstation on the inside
-docker exec -it m07-firewall sh   # the firewall
-```
+You'll see a welcome banner, the machines will power on, and you'll land at a `lab>` prompt. Type
+`help` any time to see the commands. The ones you need:
 
-Everything below is offline; no internet is used.
+| Command | What it does |
+|---------|--------------|
+| `ping <from> <to>` | Ping one machine from another, e.g. `ping pc2 pc1` |
+| `rules show` | List the firewall's current rules |
+| `rules load` | Apply this lab's teaching ruleset |
+| `rules clear` | Remove all rules (allow everything) |
+| `connect <host>` | Open a shell *on* a machine (for the curious) |
+| `dns <name>` | Look up a name, e.g. `dns coke.dreamland.com.au` |
+| `map` | Show the network diagram |
+| `quit` | Leave the lab |
 
 ---
 
-## Phase 1: The network before any firewall rules
+## Phase 1: The network with no firewall rules
 
-The firewall starts with **no filter rules** — everything is permitted. Establish that baseline.
+The firewall starts **empty** — nothing is blocked. Establish that baseline.
 
-### 1.1 Look around
-
-On **pc1** (`docker exec -it m07-pc1 sh`):
-
-```sh
-ip -4 -brief addr show      # pc1 is 10.1.1.2 on the inside net
-ip route                    # note the route to 10.1.2.0/24 via the firewall (10.1.1.254)
+```
+lab> rules show
 ```
 
-### 1.2 Prove connectivity works
+You should see an empty rule list. Now check that everyone can reach the protected machine:
 
-From **pc2** (`docker exec -it m07-pc2 sh`), ping the protected host:
-
-```sh
-ping -c 3 10.1.1.2          # succeeds — no rules yet
+```
+lab> ping pc2 pc1
+lab> ping pc3 pc1
+lab> ping pc4 pc1
 ```
 
-Repeat from **pc3** and **pc4** — all three should reach pc1.
+All three should succeed (`0% packet loss`).
 
-> **Q1.** With no firewall rules, can every outside host reach pc1? Record the ping result from pc2.
+> **Q1.** With no firewall rules, can every outside machine reach `pc1`? Paste the result of
+> `ping pc2 pc1`.
 
-### 1.3 Watch the traffic cross the firewall (ICMP + ARP)
-
-On the **firewall**, watch packets as they are forwarded:
-
-```sh
-tcpdump -ni any icmp        # leave running
-```
-
-Now ping again from pc2. You'll see the echo request arrive on one interface and leave on the other
-— the firewall is **routing** between the two networks. Stop with `Ctrl-C`.
-
-> **Q2.** In one sentence each, define **ICMP** and **ARP**. (Hint: which one did `ping` use, and
-> which one maps an IP to a hardware address on the same segment? Try `ip neigh` on pc2.)
+> **Q2.** In one sentence each, what is **ICMP** and what is **`ping`**? (Hint: `ping` is the
+> everyday tool; ICMP is the underlying message type it uses.)
 
 ---
 
-## Phase 2: Apply a firewall ruleset (DROP vs DENY)
+## Phase 2: Apply firewall rules — DROP vs DENY
 
-Now add rules on the firewall and watch behaviour change. This is the heart of the lab.
+Now switch the firewall on with this lab's ruleset:
 
-### 2.1 Load the ruleset
-
-On the **firewall**:
-
-```sh
-/rules/rules.sh
+```
+lab> rules load
+lab> rules show
 ```
 
-This installs three ordered rules in the `FORWARD` chain:
+You'll see three rules, in order:
 
-| # | Match | Action | Original worksheet term |
-|---|-------|--------|-------------------------|
-| 0 | ICMP pc2 (10.1.2.3) → pc1 | `DROP` | Drop |
-| 1 | ICMP pc3 (10.1.2.4) → pc1 | `REJECT --reject-with icmp-host-unreachable` | Deny |
-| 2 | anything else | `ACCEPT` | Permit (catch-all) |
+| # | Traffic | Action | Plain meaning |
+|---|---------|--------|---------------|
+| 1 | `pc2` → `pc1` (ping) | **DROP** | Silently throw it away |
+| 2 | `pc3` → `pc1` (ping) | **REJECT** | Refuse it and send back an error |
+| 3 | everything else | **ACCEPT** | Allow it |
 
-View them:
+Rules are read top to bottom, and the **first** matching rule wins.
 
-```sh
-iptables -L FORWARD -n -v --line-numbers
+> **Q3.** Before testing, predict: what's the difference between **DROP** (silent) and **REJECT**
+> (refuse with an error), from the point of view of the person being blocked?
+
+Now test each machine and watch *how* each one fails:
+
+```
+lab> ping pc2 pc1     # DROP   -> just hangs, then 100% loss, NO error
+lab> ping pc3 pc1     # REJECT -> fails fast: "Destination Host Unreachable"
+lab> ping pc4 pc1     # ACCEPT -> succeeds
 ```
 
-> **Q3.** Explain the difference between **DROP** and **REJECT (Deny)** in your own words, *before*
-> you test them.
+> **Q4.** Record all three results. Which machine was *told* it was blocked, and which was met with
+> silence? Why might a real firewall administrator prefer **DROP** (silence) at the edge of a
+> network — what does silence deny an attacker?
 
-### 2.2 Test each path and compare the experience
+Check how many packets each rule caught:
 
-Run each ping and watch the **difference in how it fails**:
-
-```sh
-# From pc2  — matched by Rule 0 (DROP)
-docker exec -it m07-pc2 ping -c 3 10.1.1.2      # times out: 100% loss, NO error message
-
-# From pc3  — matched by Rule 1 (REJECT/Deny)
-docker exec -it m07-pc3 ping -c 3 10.1.1.2      # fails fast: "Destination Host Unreachable"
-
-# From pc4  — falls through to Rule 2 (ACCEPT)
-docker exec -it m07-pc4 ping -c 3 10.1.1.2      # succeeds
+```
+lab> rules show
 ```
 
-> **Q4.** Record the exact output of all three. Which one told the sender it was blocked, and which
-> one stayed silent? Why might a real firewall administrator prefer DROP (silence) at the network
-> edge?
-
-### 2.3 Watch the rule counters
-
-On the firewall, re-run:
-
-```sh
-iptables -L FORWARD -n -v --line-numbers
-```
-
-> **Q5.** The `pkts`/`bytes` columns show how many packets hit each rule. Which rule caught pc2's
-> traffic? Which caught pc4's?
+> **Q5.** The `pkts` column counts packets that hit each rule. Which rule caught `pc2`'s traffic?
+> Which caught `pc4`'s?
 
 ---
 
-## Phase 3: Rule ORDER matters
+## Phase 3: Order matters
 
-Firewalls evaluate rules top-to-bottom and stop at the first match. Prove it.
+Firewalls read rules top to bottom and stop at the first match. This means the *order* of rules can
+change everything. Let's prove it by putting an "allow" for `pc3` **above** the reject rule.
 
-### 3.1 Move the catch-all above the Deny rule
-
-On the **firewall**, insert an ACCEPT for pc3 *before* the REJECT (simulating "swap Rule 1 and Rule
-2"):
-
-```sh
-iptables -I FORWARD 2 -p icmp -s 10.1.2.4 -d 10.1.1.2 -j ACCEPT
-iptables -L FORWARD -n -v --line-numbers
+```
+lab> connect firewall
 ```
 
-### 3.2 Re-test pc3
+You're now on the firewall itself (the prompt changes to `[firewall] $`). Insert an ACCEPT for
+`pc3` at position 2, then look at the list:
 
-```sh
-docker exec -it m07-pc3 ping -c 3 10.1.1.2      # now SUCCEEDS — the ACCEPT is hit first
+```
+[firewall] $ iptables -I FORWARD 2 -p icmp -s 10.1.2.4 -d 10.1.1.2 -j ACCEPT
+[firewall] $ iptables -L FORWARD -n -v --line-numbers
+[firewall] $ exit
 ```
 
-> **Q6.** pc3 was denied a moment ago and now succeeds, with no change to the Deny rule itself. What
-> changed, and what does this tell you about writing firewall policy? Take a screenshot of the rule
-> list showing the new order.
+Back at the `lab>` prompt, re-test `pc3`:
 
-Reset to the taught ruleset when done: `/rules/rules.sh`.
+```
+lab> ping pc3 pc1     # now SUCCEEDS — the new ACCEPT is reached before the REJECT
+```
+
+> **Q6.** `pc3` was blocked a moment ago and now gets through — and you never touched the reject
+> rule. What changed? In one sentence, why does rule order matter when writing firewall policy?
+
+Reset to the taught ruleset when you're done:
+
+```
+lab> rules load
+```
 
 ---
 
-## Phase 4: DNS through the firewall (optional but recommended)
+## Phase 4: Reaching a machine by name (DNS)
 
-The lab includes a DNS server (`dnsmasq`) on the inside net at `10.1.1.253`, serving the zone
-`dreamland.com.au`.
+Machines are easier to reach by name than by number. The lab has a name server. From the console:
 
-On **pc1** (already pointed at the lab DNS):
-
-```sh
-getent hosts coke.dreamland.com.au    # resolves to 10.1.2.5 (pc4, on the outside net)
-ping -c 3 coke.dreamland.com.au       # resolves by name AND routes through the firewall
+```
+lab> dns coke.dreamland.com.au
 ```
 
-> **Q7.** What IP did `coke.dreamland.com.au` resolve to? Explain the two separate things that had
-> to work for the ping to succeed (name resolution, then forwarding).
+It resolves to `10.1.2.5` — that's `pc4`. So a name lookup plus the firewall's ACCEPT rule together
+let you reach it.
+
+> **Q7.** What address did `coke.dreamland.com.au` resolve to? Two separate things had to work for
+> that to be useful — name resolution, and then the firewall allowing the traffic. Explain both in a
+> sentence.
 
 ---
 
-## Phase 5: Subnetting (concept exercise)
+## Phase 5: Subnetting (a thinking exercise, no commands needed)
 
-This shows why two hosts with the *same* addresses can reach each other under one netmask but not
-another — the concept the simulator taught by changing masks.
+Two machines can talk directly only if they're on the **same subnet**. The subnet is decided by the
+network mask.
 
-On **pc4**, temporarily give yourself a second address and reason about it:
+- `pc2` is `10.1.2.3` and `pc4` is `10.1.2.5`, both with mask `/24` (`255.255.255.0`). The `/24`
+  means the first three numbers (`10.1.2`) are the *network*; only the last number identifies the
+  machine. Same network → they're on the same subnet.
 
-```sh
-ip addr show                          # note pc4 is 10.1.2.5/24
-# 10.1.2.5 and 10.1.2.3 (pc2) share the 10.1.2.0/24 network -> same subnet.
-# If pc4 were 10.1.2.5/26 and pc2 10.1.2.3/26, are they still in the same subnet? Work it out.
-```
-
-> **Q8.** For the pair `10.1.2.5` and `10.1.2.70`: are they in the same subnet under `/24`? Under
-> `/26`? Show the network portion in each case and explain why a ping would or wouldn't work.
+> **Q8.** Consider `10.1.2.5` and `10.1.2.130`.
+> (a) Under a `/24` mask, are they on the same subnet? (b) Under a `/25` mask (which splits
+> `10.1.2.0` into `.0–.127` and `.128–.255`), are they still on the same subnet? Explain each answer.
 
 ---
 
-## Passport prompts (submit these)
+## Wrapping up
 
-Collect **Q1–Q8** above into your lab journal, with:
+Type `quit` to leave. You'll be asked whether to shut the machines down — say yes unless you're
+coming straight back.
 
-- The three ping outputs from Phase 2.2 (DROP vs REJECT vs ACCEPT) side by side.
-- A screenshot of `iptables -L FORWARD -n -v --line-numbers` after Phase 3 (reordered rules).
-- Your one-line definitions of ICMP, ARP, DROP, and REJECT.
+### Passport prompts (submit these)
 
-## Lab Cleanup
+Collect **Q1–Q8** into your lab journal, with:
 
-```bash
-make stop      # stop the containers
-# or
-make down      # stop and remove containers + networks
+- The three ping results from Phase 2 (DROP vs REJECT vs ACCEPT) side by side.
+- A copy of `rules show` after Phase 3 (with the reordered rules).
+- Your one-line definitions of **ICMP**, **DROP**, and **REJECT**.
+
+---
+
+## Under the hood: the real commands
+
+You never had to type Docker, but everything above ran real tools on real machines. Here's what each
+console command actually did, so you can do it yourself on any Linux system:
+
+| Console command | Real command it ran |
+|-----------------|---------------------|
+| `ping pc2 pc1` | `ping 10.1.1.2` **on** the pc2 machine |
+| `rules load` | `iptables` rules applied on the firewall (see `modules/module-07-firewalls/rules/rules.sh`) |
+| `rules show` | `iptables -L FORWARD -n -v --line-numbers` on the firewall |
+| `rules clear` | `iptables -F FORWARD` on the firewall |
+| `connect pc3` | opened a shell on the pc3 machine |
+| `dns coke.dreamland.com.au` | `getent hosts coke.dreamland.com.au` on pc1 |
+
+The firewall ruleset (`rules.sh`) in full:
+
+```sh
+iptables -A FORWARD -p icmp -s 10.1.2.3 -d 10.1.1.2 -j DROP                                        # pc2 -> pc1: Drop
+iptables -A FORWARD -p icmp -s 10.1.2.4 -d 10.1.1.2 -j REJECT --reject-with icmp-host-unreachable  # pc3 -> pc1: Deny
+iptables -A FORWARD -j ACCEPT                                                                       # everything else: Permit
 ```
 
-## Instructor notes
+### Instructor notes
 
-- **DROP vs REJECT** is the key takeaway and maps exactly onto the original "Drop vs Deny".
-- **DHCP** (an exercise in the original simulator) is intentionally *not* reproduced live: Docker's
-  own IP address management owns addressing on these networks, so a second DHCP server would fight
-  it. The concept is covered by the static addressing students can already see with `ip addr`. If
-  you want a live DHCP demo, run it on a separate throwaway network with Docker IPAM disabled — out
-  of scope for this guide.
-- All addressing matches `docker-compose.yml`; change it in one place if you re-address.
+- **DROP vs REJECT** is the key takeaway and maps exactly onto the original lab's "Drop vs Deny".
+- **DHCP** (a step in the original simulator) is intentionally not reproduced live: Docker manages
+  addressing on these networks, so a competing DHCP server would fight it. Static addressing is
+  visible via `connect <host>` then `ip addr`.
+- All addressing is defined once in `docker-compose.yml`; change it there if you re-address.
+- The console (`scripts/lab-console`) is the same for every module — only the host table and helper
+  commands change per module.
