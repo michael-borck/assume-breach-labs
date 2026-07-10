@@ -16,6 +16,65 @@
 services:
 
   # ======================================================================
+  # Module 02 — Port Scanning. An attacker workstation (nmap) and a small
+  # internal target network with hosts running different services. Replaces
+  # the original lab's scans of live internet hosts — lawful and reliable.
+  #   web    10.2.0.20  HTTP 80
+  #   files  10.2.0.30  SSH 22, FTP 21
+  #   app    10.2.0.40  HTTP 8080, mystery banner 9000
+  # ======================================================================
+  m02-attacker:
+    image: ghcr.io/michael-borck/assume-breach-base:latest
+    container_name: m02-attacker
+    hostname: attacker
+    profiles: ["module-02"]
+    user: "root"                 # nmap SYN/OS scans need root + raw sockets
+    cap_add: ["NET_RAW", "NET_ADMIN"]
+    command: ["sleep", "infinity"]
+    networks:
+      m02-net:
+        ipv4_address: 10.2.0.10
+
+  m02-web:
+    image: nginx:alpine
+    container_name: m02-web
+    hostname: web
+    profiles: ["module-02"]
+    networks:
+      m02-net:
+        ipv4_address: 10.2.0.20
+
+  m02-files:
+    build:
+      context: ./modules/module-02-port-scanning/target
+    image: ghcr.io/michael-borck/assume-breach-target:latest
+    container_name: m02-files
+    hostname: files
+    profiles: ["module-02"]
+    environment:
+      START_SSH: "1"
+      START_FTP: "1"
+    networks:
+      m02-net:
+        ipv4_address: 10.2.0.30
+
+  m02-app:
+    image: ghcr.io/michael-borck/assume-breach-target:latest
+    container_name: m02-app
+    hostname: app
+    profiles: ["module-02"]
+    environment:
+      START_HTTP: "1"
+      HTTP_PORT: "8080"
+      HTTP_TITLE: "App Server"
+      START_BANNER: "1"
+      BANNER_PORT: "9000"
+      BANNER_TEXT: "Custom-App 2.1"
+    networks:
+      m02-net:
+        ipv4_address: 10.2.0.40
+
+  # ======================================================================
   # Module 03 — Password Attacks. A self-contained cracking workstation
   # (John the Ripper, fcrackzip) with hashes, a wordlist, and an encrypted
   # zip baked into the image (~10 KB of data). No target network needed.
@@ -65,9 +124,6 @@ services:
 
   m07-pc1:
     image: ghcr.io/michael-borck/assume-breach-node:latest
-    build:
-      context: ./modules/module-07-firewalls
-      dockerfile: node/Dockerfile
     container_name: m07-pc1
     hostname: pc1
     profiles: ["module-07"]
@@ -84,9 +140,6 @@ services:
 
   m07-pc2:
     image: ghcr.io/michael-borck/assume-breach-node:latest
-    build:
-      context: ./modules/module-07-firewalls
-      dockerfile: node/Dockerfile
     container_name: m07-pc2
     hostname: pc2
     profiles: ["module-07"]
@@ -102,9 +155,6 @@ services:
 
   m07-pc3:
     image: ghcr.io/michael-borck/assume-breach-node:latest
-    build:
-      context: ./modules/module-07-firewalls
-      dockerfile: node/Dockerfile
     container_name: m07-pc3
     hostname: pc3
     profiles: ["module-07"]
@@ -120,9 +170,6 @@ services:
 
   m07-pc4:
     image: ghcr.io/michael-borck/assume-breach-node:latest
-    build:
-      context: ./modules/module-07-firewalls
-      dockerfile: node/Dockerfile
     container_name: m07-pc4
     hostname: pc4
     profiles: ["module-07"]
@@ -138,9 +185,6 @@ services:
 
   m07-dns:
     image: ghcr.io/michael-borck/assume-breach-node:latest
-    build:
-      context: ./modules/module-07-firewalls
-      dockerfile: node/Dockerfile
     container_name: m07-dns
     hostname: dns
     profiles: ["module-07"]
@@ -150,6 +194,11 @@ services:
         ipv4_address: 10.1.1.253
 
 networks:
+  m02-net:
+    name: m02-net
+    ipam:
+      config:
+        - subnet: 10.2.0.0/24
   m07-inside:
     name: m07-inside
     ipam:

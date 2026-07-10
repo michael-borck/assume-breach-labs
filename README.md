@@ -33,7 +33,7 @@ with plain commands like `ping pc2 pc1` and `rules load`. No `docker` typing. Fo
 |--------|-------|------|-------|
 | [00](modules/module-00-setup/) | Environment setup (install Docker, smoke test) | docs | `module-00-setup/README.md` |
 | 01 | Access control & isolation | *planned* | — |
-| 02 | Port scanning & enumeration | *planned* | — |
+| **[02](modules/module-02-port-scanning/)** | **Port scanning & enumeration (nmap)** | **ready** | `module-02-port-scanning/LAB-GUIDE.md` |
 | **[03](modules/module-03-password-attacks/)** | **Password attacks (John the Ripper, fcrackzip)** | **ready** | `module-03-password-attacks/LAB-GUIDE.md` |
 | 04 | Cryptography | *planned* | — |
 | 05 | Risk management (in-browser calculator) | *planned* | — |
