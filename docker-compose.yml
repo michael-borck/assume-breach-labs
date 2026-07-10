@@ -1,0 +1,142 @@
+# Assume Breach Labs — single compose file for the whole series.
+#
+# Every service belongs to a module PROFILE. Starting a module starts only that
+# module's services:
+#
+#   docker compose --profile module-07 up -d      # or: make m07
+#
+# As more modules are built, add their services here under a new profile and a
+# new network block. Keep network names + subnets unique across the whole file.
+
+services:
+
+  # ======================================================================
+  # Module 07 — Firewalls (replaces the Windows-only iNetworkSimulator with
+  # real iptables/nftables across two routed networks).
+  #
+  # Topology:
+  #   inside  net 10.1.1.0/24   pc1 = .2      firewall inside = .254
+  #   outside net 10.1.2.0/24   pc2 = .3      firewall outside = .254
+  #                             pc3 = .4
+  #                             pc4 = .5
+  #   dns (dnsmasq) sits on the inside net at 10.1.1.253
+  #
+  # The firewall container routes between the two nets. Students apply and edit
+  # the iptables ruleset to see DROP vs REJECT and rule-ordering effects.
+  # ======================================================================
+
+  m07-firewall:
+    build:
+      context: ./modules/module-07-firewalls
+      dockerfile: node/Dockerfile
+    image: assume-breach-node:latest
+    container_name: m07-firewall
+    hostname: firewall
+    profiles: ["module-07"]
+    cap_add: ["NET_ADMIN"]
+    sysctls:
+      - net.ipv4.ip_forward=1
+    command: ["/firewall-entrypoint.sh"]
+    networks:
+      m07-inside:
+        ipv4_address: 10.1.1.254
+      m07-outside:
+        ipv4_address: 10.1.2.254
+
+  m07-pc1:
+    image: assume-breach-node:latest
+    build:
+      context: ./modules/module-07-firewalls
+      dockerfile: node/Dockerfile
+    container_name: m07-pc1
+    hostname: pc1
+    profiles: ["module-07"]
+    cap_add: ["NET_ADMIN"]
+    command: ["/pc-entrypoint.sh"]
+    environment:
+      ROUTE_NET: 10.1.2.0/24
+      ROUTE_GW: 10.1.1.254
+      DNS_SERVER: 10.1.1.253
+    depends_on: [m07-firewall]
+    networks:
+      m07-inside:
+        ipv4_address: 10.1.1.2
+
+  m07-pc2:
+    image: assume-breach-node:latest
+    build:
+      context: ./modules/module-07-firewalls
+      dockerfile: node/Dockerfile
+    container_name: m07-pc2
+    hostname: pc2
+    profiles: ["module-07"]
+    cap_add: ["NET_ADMIN"]
+    command: ["/pc-entrypoint.sh"]
+    environment:
+      ROUTE_NET: 10.1.1.0/24
+      ROUTE_GW: 10.1.2.254
+    depends_on: [m07-firewall]
+    networks:
+      m07-outside:
+        ipv4_address: 10.1.2.3
+
+  m07-pc3:
+    image: assume-breach-node:latest
+    build:
+      context: ./modules/module-07-firewalls
+      dockerfile: node/Dockerfile
+    container_name: m07-pc3
+    hostname: pc3
+    profiles: ["module-07"]
+    cap_add: ["NET_ADMIN"]
+    command: ["/pc-entrypoint.sh"]
+    environment:
+      ROUTE_NET: 10.1.1.0/24
+      ROUTE_GW: 10.1.2.254
+    depends_on: [m07-firewall]
+    networks:
+      m07-outside:
+        ipv4_address: 10.1.2.4
+
+  m07-pc4:
+    image: assume-breach-node:latest
+    build:
+      context: ./modules/module-07-firewalls
+      dockerfile: node/Dockerfile
+    container_name: m07-pc4
+    hostname: pc4
+    profiles: ["module-07"]
+    cap_add: ["NET_ADMIN"]
+    command: ["/pc-entrypoint.sh"]
+    environment:
+      ROUTE_NET: 10.1.1.0/24
+      ROUTE_GW: 10.1.2.254
+    depends_on: [m07-firewall]
+    networks:
+      m07-outside:
+        ipv4_address: 10.1.2.5
+
+  m07-dns:
+    image: assume-breach-node:latest
+    build:
+      context: ./modules/module-07-firewalls
+      dockerfile: node/Dockerfile
+    container_name: m07-dns
+    hostname: dns
+    profiles: ["module-07"]
+    command: ["dnsmasq", "-k", "--log-queries", "--conf-file=/etc/dnsmasq/dnsmasq.conf"]
+    networks:
+      m07-inside:
+        ipv4_address: 10.1.1.253
+
+networks:
+  m07-inside:
+    name: m07-inside
+    ipam:
+      config:
+        - subnet: 10.1.1.0/24
+  m07-outside:
+    name: m07-outside
+    ipam:
+      config:
+        - subnet: 10.1.2.0/24

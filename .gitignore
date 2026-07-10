@@ -1,0 +1,11 @@
+# macOS AppleDouble sidecar files (this repo often lives on an exFAT external drive)
+._*
+.DS_Store
+
+# Student-generated lab output
+**/output/
+**/captures/*.pcap
+*.log
+
+# Local env overrides
+.env
