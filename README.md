@@ -46,6 +46,11 @@ with plain commands like `ping pc2 pc1` and `rules load`. No `docker` typing. Fo
 | **[10](modules/module-10-web/)** | **Web security (deliberately vulnerable app: OWASP Juice Shop)** | **ready** | `module-10-web/LAB-GUIDE.md` |
 | **[11](modules/module-11-vpn/)** | **VPN & tunnelling (WireGuard)** | **ready** | `module-11-vpn/LAB-GUIDE.md` |
 
+Modules are independent, but some pair naturally: **06 (packet capture) ↔ 11 (VPN)** — the problem
+and its fix (11 encrypts the traffic 06 reads in the clear); **02 (scanning) ↔ 07 (firewalls)** — the
+attacker's and defender's views of the same event. Module **12 — The Long Game** is the
+[Incident Zero](https://incidentzero.retroverse.studio/) print-and-play game capstone.
+
 Going further / extension labs for advanced students: [`GOING-FURTHER.md`](GOING-FURTHER.md).
 
 ## How it works

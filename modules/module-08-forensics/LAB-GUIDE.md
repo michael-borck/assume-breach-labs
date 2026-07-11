@@ -134,3 +134,7 @@ Collect **Q1–Q8** into your lab journal, with:
 
 After `connect station` you can read the raw `.eml` files and the author texts, and run the tools
 with your own arguments.
+
+## Going further — Incident Zero
+
+Enjoyed the investigation? Incident Zero's **Forensics** module has you chase attribution and rebuild an attack timeline under pressure — the same detective work, played as a game. ([Incident Zero](https://incidentzero.retroverse.studio/) — free, print-and-play.)

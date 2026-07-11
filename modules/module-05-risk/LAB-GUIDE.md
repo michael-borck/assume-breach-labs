@@ -108,3 +108,7 @@ Collect **Q1–Q8** into your lab journal, with:
 - The calculator runs entirely in your browser from a page served on your own machine — nothing is
   sent anywhere, and it works offline.
 - All figures are editable; refresh the page to reset to XYZ's starting numbers.
+
+## Going further — Incident Zero
+
+Want the strategic side of this? Incident Zero's **Audit & Compliance** module has you score an organisation's controls under time and budget pressure — the same cost–benefit judgement you just made, played out as a game. ([Incident Zero](https://incidentzero.retroverse.studio/) — free, print-and-play.)

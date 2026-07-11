@@ -138,3 +138,7 @@ Collect **Q1–Q8** into your lab journal, with:
   capture files.
 - Everything you did in the GUI has a command-line twin: after `connect wireshark`, try
   `tshark -r /pcaps/ftp-login.pcap -Y ftp` to see the same FTP packets in the terminal.
+
+## Going further — Incident Zero
+
+You read the packets here; Incident Zero's **Network Building** module has you *design and defend* the network they cross, buying an architecture under budget — the strategic view behind the traffic. ([Incident Zero](https://incidentzero.retroverse.studio/) — free, print-and-play.)
