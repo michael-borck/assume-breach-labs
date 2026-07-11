@@ -121,7 +121,20 @@
   .chip.web{background:var(--chip-web);color:var(--chip-web-ink)}
   .card h3{margin:12px 0 6px;font-size:17px;font-weight:700;text-wrap:balance;max-width:88%}
   .card p{margin:0;color:var(--muted);font-size:13.5px}
-  .card .more{margin-top:14px;font-size:12.5px;font-weight:700;color:var(--accent)}
+  .card .cardlinks{margin-top:14px;display:flex;gap:16px}
+  .clink{border:none;background:none;padding:0;font:inherit;font-size:12.5px;font-weight:700;color:var(--accent);cursor:pointer}
+  .clink:hover{text-decoration:underline}
+  .clink:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+  /* modal tabs (How to run / Network map) */
+  .mtabs{display:flex;gap:10px;margin:20px 0 2px;border-bottom:1px solid var(--line)}
+  .mtab{border:none;background:none;padding:8px 2px;margin-bottom:-1px;font:inherit;font-size:13px;font-weight:700;
+    color:var(--muted);cursor:pointer;border-bottom:2px solid transparent}
+  .mtab[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+  .mtab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .mpane{display:none;padding-top:8px}
+  .mpane.on{display:block}
+  .netmap{width:100%;height:auto;border:1px solid var(--line);border-radius:12px}
+  .maphint{font-size:12.5px;color:var(--muted);margin:8px 0 0}
 
   /* modal */
   .overlay{position:fixed;inset:0;background:rgba(10,17,26,.55);backdrop-filter:blur(3px);
@@ -263,7 +276,7 @@
   </section>
 
   <div id="modules" class="sec-h">
-    <h2>The nine modules</h2>
+    <h2>The ten modules</h2>
     <p>Independent — pick any. Click a card for what it teaches and how to run it.</p>
   </div>
   <div class="grid" id="grid"></div>
@@ -349,18 +362,34 @@
       run:["./start.sh → choose 09","Type open for the quiz (localhost:8090)","Type certs and visit each broken-cert site"],
       cmds:["open","certs"],
       pairs:"Pairs with Module 08 (forensics)." },
+    { n:"10", slug:"module-10-web", tag:"web", title:"Web Security",
+      teaser:"Attack a deliberately broken web app — SQL injection, XSS, and more.",
+      teach:"Be the attacker against OWASP Juice Shop, a web app built to be vulnerable. See how the classic web flaws actually work in the browser — and what would have stopped each one.",
+      replaces:"Brand new — the original unit had no hands-on web-security lab.",
+      run:["./start.sh → choose 10","Type open (or visit localhost:3010)","Work through the challenges in the browser"],
+      cmds:["open","url"],
+      pairs:"The offensive counterpart to the defensive labs." },
   ];
 
   const chipLabel = t => t === "web" ? "Browser" : "Terminal";
   const grid = document.getElementById("grid");
   MODULES.forEach((m, i) => {
-    const c = document.createElement("button");
-    c.className = "card"; c.type = "button"; c.setAttribute("aria-haspopup","dialog");
+    const c = document.createElement("div");
+    c.className = "card"; c.setAttribute("role","button"); c.tabIndex = 0;
+    c.setAttribute("aria-haspopup","dialog");
     c.innerHTML = `<span class="num">${m.n}</span>
       <span class="chip ${m.tag}">${chipLabel(m.tag)}</span>
       <h3>${m.title}</h3><p>${m.teaser}</p>
-      <div class="more">View lab →</div>`;
-    c.addEventListener("click", () => openModal(i));
+      <div class="cardlinks">
+        <button type="button" class="clink" data-tab="guide">View lab →</button>
+        <button type="button" class="clink" data-tab="map">Network map →</button>
+      </div>`;
+    c.addEventListener("click", () => openModal(i, "guide"));
+    c.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openModal(i, "guide"); }
+    });
+    c.querySelectorAll(".clink").forEach(b =>
+      b.addEventListener("click", e => { e.stopPropagation(); openModal(i, b.dataset.tab); }));
     grid.appendChild(c);
   });
 
@@ -368,7 +397,8 @@
   const modal = document.getElementById("modal");
   let lastFocus = null;
 
-  function openModal(i){
+  function openModal(i, tab){
+    tab = tab || "guide";
     const m = MODULES[i];
     lastFocus = document.activeElement;
     modal.innerHTML = `
@@ -379,17 +409,32 @@
       </div>
       <p class="teach">${m.teach}</p>
       <p class="replaces">${m.replaces}</p>
-      <h4>How to run it</h4>
-      <ol>${m.run.map(s => `<li>${s}</li>`).join("")}</ol>
-      <h4>Commands you'll use</h4>
-      <div class="cmds mono">${m.cmds.map(c => `<span class="p">lab&gt;</span> ${c}`).join("<br>")}</div>
-      <p class="pairs">↔ ${m.pairs}</p>
+      <div class="mtabs" role="tablist">
+        <button type="button" class="mtab" data-mtab="guide">How to run</button>
+        <button type="button" class="mtab" data-mtab="map">Network map</button>
+      </div>
+      <div class="mpane" data-mtab="guide">
+        <h4>How to run it</h4>
+        <ol>${m.run.map(s => `<li>${s}</li>`).join("")}</ol>
+        <h4>Commands you'll use</h4>
+        <div class="cmds mono">${m.cmds.map(c => `<span class="p">lab&gt;</span> ${c}`).join("<br>")}</div>
+        <p class="pairs">↔ ${m.pairs}</p>
+      </div>
+      <div class="mpane" data-mtab="map">
+        <img class="netmap" src="diagrams/module-${m.n}.svg" alt="Network map for ${m.title}" loading="lazy">
+        <p class="maphint">The machines and networks this lab runs on — generated from its <code>docker-compose</code>, so it always matches the real thing.</p>
+      </div>
       <div class="mfoot">
         <a class="btn primary" href="${REPO}${m.slug}/LAB-GUIDE.md" target="_blank" rel="noopener">Full lab guide ↗</a>
         <button class="btn ghost" type="button" id="closeBtn">Close</button>
       </div>`;
     overlay.classList.add("open");
     document.body.style.overflow = "hidden";
+    const tabs = [...modal.querySelectorAll(".mtab")], panes = [...modal.querySelectorAll(".mpane")];
+    const selTab = t => { tabs.forEach(b => b.setAttribute("aria-selected", String(b.dataset.mtab === t)));
+      panes.forEach(p => p.classList.toggle("on", p.dataset.mtab === t)); };
+    tabs.forEach(b => b.addEventListener("click", () => selTab(b.dataset.mtab)));
+    selTab(tab);
     document.getElementById("closeX").addEventListener("click", closeModal);
     document.getElementById("closeBtn").addEventListener("click", closeModal);
     document.getElementById("closeX").focus();
