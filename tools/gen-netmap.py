@@ -10,7 +10,7 @@ Usage:  python3 tools/gen-netmap.py            # all modules
 """
 import json, subprocess, sys, ipaddress, os
 
-MODULES = ["01","02","03","04","05","06","07","08","09","10"]
+MODULES = ["01","02","03","04","05","06","07","08","09","10","11"]
 OUTDIR = "docs/diagrams"
 W = 880
 
@@ -120,9 +120,10 @@ def layout_two_networks(svcs, nets):
     for b in bridges:
         bx, by = W/2-84, 80 + zh/2 - 54
         ips = " ".join(v for v in b["nets"].values() if v)
+        sub = "routes + filters" if b["role"] == "firewall" else "on the path"
         body += (f'<rect class="fw" x="{bx}" y="{by}" width="168" height="108" rx="14"/>'
                  f'<text class="fwt" x="{W/2}" y="{by+34}" text-anchor="middle">{esc(b["disp"].upper())}</text>'
-                 f'<text class="fws" x="{W/2}" y="{by+56}" text-anchor="middle">routes + filters</text>')
+                 f'<text class="fws" x="{W/2}" y="{by+56}" text-anchor="middle">{sub}</text>')
         for j,(nn,ip) in enumerate([kv for kv in b["nets"].items() if kv[1]]):
             body += f'<text class="ip" x="{W/2}" y="{by+78+j*16}" text-anchor="middle">{esc(ip)}</text>'
         body += f'<path class="link" d="M{bx} {by+54} H{railL}"/><path class="link" d="M{bx+168} {by+54} H{railR}"/>'

@@ -200,6 +200,51 @@ services:
       - "8445:8445"
 
   # ======================================================================
+  # Module 11 — VPN. A client and a server on separate networks, with an
+  # eavesdropper as the untrusted hop between them (all client<->server traffic
+  # routes through it). Shows a password captured in the clear, then hidden once
+  # a WireGuard tunnel is up.
+  # ======================================================================
+  m11-client:
+    build:
+      context: ./modules/module-11-vpn/node
+    image: ghcr.io/michael-borck/assume-breach-vpn:latest
+    container_name: m11-client
+    hostname: client
+    profiles: ["module-11"]
+    cap_add: ["NET_ADMIN"]
+    command: ["/client-entrypoint.sh"]
+    networks:
+      m11-office:
+        ipv4_address: 10.11.0.10
+
+  m11-server:
+    image: ghcr.io/michael-borck/assume-breach-vpn:latest
+    container_name: m11-server
+    hostname: server
+    profiles: ["module-11"]
+    cap_add: ["NET_ADMIN"]
+    command: ["/server-entrypoint.sh"]
+    networks:
+      m11-datacentre:
+        ipv4_address: 10.11.1.20
+
+  m11-eavesdropper:
+    image: ghcr.io/michael-borck/assume-breach-vpn:latest
+    container_name: m11-eavesdropper
+    hostname: eavesdropper
+    profiles: ["module-11"]
+    cap_add: ["NET_ADMIN", "NET_RAW"]
+    sysctls:
+      - net.ipv4.ip_forward=1
+    command: ["/eavesdropper-entrypoint.sh"]
+    networks:
+      m11-office:
+        ipv4_address: 10.11.0.254
+      m11-datacentre:
+        ipv4_address: 10.11.1.254
+
+  # ======================================================================
   # Module 07 — Firewalls (replaces the Windows-only iNetworkSimulator with
   # real iptables/nftables across two routed networks).
   #
@@ -318,6 +363,16 @@ services:
       - "3010:3000"
 
 networks:
+  m11-office:
+    name: m11-office
+    ipam:
+      config:
+        - subnet: 10.11.0.0/24
+  m11-datacentre:
+    name: m11-datacentre
+    ipam:
+      config:
+        - subnet: 10.11.1.0/24
   m02-net:
     name: m02-net
     ipam:

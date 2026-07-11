@@ -20,6 +20,7 @@ on:
       - modules/module-06-packet-capture/**
       - modules/module-08-forensics/**
       - modules/module-09-human-factors/**
+      - modules/module-11-vpn/**
       - .github/workflows/build-modules.yml
   workflow_dispatch:
 
@@ -63,6 +64,9 @@ jobs:
           - name: assume-breach-badcerts
             context: modules/module-09-human-factors/badcerts
             file: modules/module-09-human-factors/badcerts/Dockerfile
+          - name: assume-breach-vpn
+            context: modules/module-11-vpn/node
+            file: modules/module-11-vpn/node/Dockerfile
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3

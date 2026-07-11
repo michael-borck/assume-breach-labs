@@ -119,6 +119,8 @@
     padding:3px 9px;border-radius:999px}
   .chip.cli{background:var(--chip-cli);color:var(--chip-cli-ink)}
   .chip.web{background:var(--chip-web);color:var(--chip-web-ink)}
+  .chip.game{background:var(--accent);color:#fff}
+  .card.card-link{background:linear-gradient(135deg,var(--surface),var(--accent-soft))}
   .card h3{margin:12px 0 6px;font-size:17px;font-weight:700;text-wrap:balance;max-width:88%}
   .card p{margin:0;color:var(--muted);font-size:13.5px}
   .card .cardlinks{margin-top:14px;display:flex;gap:16px}
@@ -276,7 +278,7 @@
   </section>
 
   <div id="modules" class="sec-h">
-    <h2>The ten modules</h2>
+    <h2>The twelve modules</h2>
     <p>Independent — pick any. Click a card for what it teaches and how to run it.</p>
   </div>
   <div class="grid" id="grid"></div>
@@ -369,27 +371,48 @@
       run:["./start.sh → choose 10","Type open (or visit localhost:3010)","Work through the challenges in the browser"],
       cmds:["open","url"],
       pairs:"The offensive counterpart to the defensive labs." },
+    { n:"11", slug:"module-11-vpn", tag:"cli", title:"VPN & Tunnelling",
+      teaser:"Watch a password get captured in the clear — then vanish behind a WireGuard tunnel.",
+      teach:"A client, a server, and an eavesdropper on the wire between them. See the login captured in plain text, then bring up a real WireGuard VPN and watch the same login become unreadable.",
+      replaces:"Brand new — the original unit taught VPNs only in slides.",
+      run:["./start.sh → choose 11","Type eavesdrop — the password is captured in the clear","Type vpn on, then eavesdrop again — it's gone"],
+      cmds:["eavesdrop","vpn on","status","vpn off"],
+      pairs:"Pairs with Module 06 (packet capture) — this is the fix for it." },
+    { n:"12", tag:"game", title:"The Long Game", link:"https://incidentzero.retroverse.studio/",
+      teaser:"The capstone: play Incident Zero, a print-and-play game across the whole security lifecycle." },
   ];
 
   const chipLabel = t => t === "web" ? "Browser" : "Terminal";
   const grid = document.getElementById("grid");
   MODULES.forEach((m, i) => {
     const c = document.createElement("div");
-    c.className = "card"; c.setAttribute("role","button"); c.tabIndex = 0;
-    c.setAttribute("aria-haspopup","dialog");
-    c.innerHTML = `<span class="num">${m.n}</span>
-      <span class="chip ${m.tag}">${chipLabel(m.tag)}</span>
-      <h3>${m.title}</h3><p>${m.teaser}</p>
-      <div class="cardlinks">
-        <button type="button" class="clink" data-tab="guide">View lab →</button>
-        <button type="button" class="clink" data-tab="map">Network map →</button>
-      </div>`;
-    c.addEventListener("click", () => openModal(i, "guide"));
-    c.addEventListener("keydown", e => {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openModal(i, "guide"); }
-    });
-    c.querySelectorAll(".clink").forEach(b =>
-      b.addEventListener("click", e => { e.stopPropagation(); openModal(i, b.dataset.tab); }));
+    c.tabIndex = 0;
+    if (m.link) {
+      // A card that links straight out (the game capstone) — no lab overlay.
+      c.className = "card card-link"; c.setAttribute("role","link");
+      c.innerHTML = `<span class="num">${m.n}</span>
+        <span class="chip game">Print &amp; play</span>
+        <h3>${m.title}</h3><p>${m.teaser}</p>
+        <div class="cardlinks"><span class="clink">Play the game ↗</span></div>`;
+      const go = () => window.open(m.link, "_blank", "noopener");
+      c.addEventListener("click", go);
+      c.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+    } else {
+      c.className = "card"; c.setAttribute("role","button"); c.setAttribute("aria-haspopup","dialog");
+      c.innerHTML = `<span class="num">${m.n}</span>
+        <span class="chip ${m.tag}">${chipLabel(m.tag)}</span>
+        <h3>${m.title}</h3><p>${m.teaser}</p>
+        <div class="cardlinks">
+          <button type="button" class="clink" data-tab="guide">View lab →</button>
+          <button type="button" class="clink" data-tab="map">Network map →</button>
+        </div>`;
+      c.addEventListener("click", () => openModal(i, "guide"));
+      c.addEventListener("keydown", e => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openModal(i, "guide"); }
+      });
+      c.querySelectorAll(".clink").forEach(b =>
+        b.addEventListener("click", e => { e.stopPropagation(); openModal(i, b.dataset.tab); }));
+    }
     grid.appendChild(c);
   });
 

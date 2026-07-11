@@ -1,4 +1,4 @@
-.PHONY: help netmaps pull-base build-base m00 m01 m02 m03 m04 m05 m06 m07 m08 m09 m10 stop down status
+.PHONY: help netmaps pull-base build-base m00 m01 m02 m03 m04 m05 m06 m07 m08 m09 m10 m11 stop down status
 
 # Shared toolbox image. Default is the prebuilt GHCR image (just pull it).
 # Override to build locally: `make build-base`.
@@ -63,12 +63,14 @@ m09:
 	$(call RUN_MODULE,09)
 m10:
 	$(call RUN_MODULE,10)
+m11:
+	$(call RUN_MODULE,11)
 
 stop:
 	$(COMPOSE) stop
 
 down:
-	$(COMPOSE) --profile module-01 --profile module-02 --profile module-03 --profile module-04 --profile module-05 --profile module-06 --profile module-08 --profile module-09 --profile module-07 down --remove-orphans
+	$(COMPOSE) --profile module-01 --profile module-02 --profile module-03 --profile module-04 --profile module-05 --profile module-06 --profile module-07 --profile module-08 --profile module-09 --profile module-10 --profile module-11 down --remove-orphans
 
 status:
 	@echo "Assume Breach Labs — module availability:"
@@ -82,4 +84,6 @@ status:
 	@echo "  module-07: ready       (make m07  /  ./start.sh)"
 	@echo "  module-08: ready       (make m08  /  ./start.sh)"
 	@echo "  module-09: ready       (make m09  /  ./start.sh)"
+	@echo "  module-10: ready       (make m10  /  ./start.sh)"
+	@echo "  module-11: ready       (make m11  /  ./start.sh)"
 	@echo "  others:    planned"
