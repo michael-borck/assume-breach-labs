@@ -108,11 +108,3 @@ Collect **Q1–Q8** into your lab journal, with:
 - The calculator runs entirely in your browser from a page served on your own machine — nothing is
   sent anywhere, and it works offline.
 - All figures are editable; refresh the page to reset to XYZ's starting numbers.
-
-### Instructor notes
-
-- The starting register deliberately includes clear "justified" cases (programmer mistakes, fire) and
-  clear "not worth it" cases (software piracy) so the cost–benefit contrast is visible immediately.
-- `ALE = SLE × ARO` and "control justified iff cost < ALE" are the only formulas; the summary tiles
-  model the "buy only justified controls" strategy.
-- This replaces the spreadsheet but keeps the same pedagogy (SLE/ARO/ALE, cost–benefit of controls).

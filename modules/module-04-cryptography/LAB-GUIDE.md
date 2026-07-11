@@ -170,13 +170,3 @@ You never typed Docker; everything ran real tools on the workstation:
 
 After `connect station` you can run `gpg` yourself. Real-world note: PGP/GnuPG is exactly what's used
 to sign software releases and encrypt email — the same commands, just with real people's keys.
-
-### Instructor notes
-
-- Keys are generated with `%no-protection` (no passphrase) so the lab flows without pinentry prompts;
-  mention that real keys are passphrase-protected.
-- Both identities live in one keyring, so `decrypt`/`verify` "just work" — the point is the
-  public/private *roles*, not multi-user key exchange (that's a natural extension).
-- `tamper` flips a character in the armored ciphertext; the armor CRC catches it (`gpg: CRC error`),
-  which is the integrity lesson.
-- Everything is offline; no external crypto website is used (unlike the original lab).

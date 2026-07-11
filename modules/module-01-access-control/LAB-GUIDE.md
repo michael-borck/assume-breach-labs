@@ -168,11 +168,3 @@ Every console command is a standard Linux command:
 | `perms salaries.csv` | `ls -l` + `getfacl` |
 
 After `connect station` you're root — run these yourself and inspect `/office`.
-
-### Instructor notes
-
-- The naive `chmod 644` in Phase 2 is deliberate: seeing rico suddenly able to read the salaries is
-  the module's key "aha". Have students undo it via the group approach.
-- Maps directly onto the original NTFS lab (deny `rico`, grant via a group), then adds ACLs and the
-  least-privilege framing.
-- Changes are per-container and reset on restart, so students can experiment freely.

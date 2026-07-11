@@ -227,13 +227,3 @@ iptables -A FORWARD -p icmp -s 10.1.2.3 -d 10.1.1.2 -j DROP                     
 iptables -A FORWARD -p icmp -s 10.1.2.4 -d 10.1.1.2 -j REJECT --reject-with icmp-host-unreachable  # pc3 -> pc1: Deny
 iptables -A FORWARD -j ACCEPT                                                                       # everything else: Permit
 ```
-
-### Instructor notes
-
-- **DROP vs REJECT** is the key takeaway and maps exactly onto the original lab's "Drop vs Deny".
-- **DHCP** (a step in the original simulator) is intentionally not reproduced live: Docker manages
-  addressing on these networks, so a competing DHCP server would fight it. Static addressing is
-  visible via `connect <host>` then `ip addr`.
-- All addressing is defined once in `docker-compose.yml`; change it there if you re-address.
-- The console (`scripts/lab-console`) is the same for every module — only the host table and helper
-  commands change per module.

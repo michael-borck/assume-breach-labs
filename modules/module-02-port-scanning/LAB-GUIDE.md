@@ -175,14 +175,3 @@ You never typed Docker; every scan was real nmap run from the attacker machine:
 
 Try them yourself after `connect attacker`. `nmap` has a manual at `man nmap` and the flags you'll
 use most are `-p` (choose ports), `-sV` (versions), and `-T0..-T5` (speed/stealth).
-
-### Instructor notes
-
-- Targets run **real services** (nginx, OpenSSH, vsftpd, a Python HTTP server, and a scripted banner
-  service on 9000) so `-sV` returns genuine version strings.
-- The attacker container runs as root with `NET_RAW` so nmap's default SYN scan and `-A`/OS detection
-  work.
-- Everything is on an isolated `10.2.0.0/24` bridge — no traffic leaves the host, and no public
-  internet target is ever scanned (unlike the original lab).
-- The port-9000 "mystery service" is a deliberate enumeration exercise: nmap flags it as unknown, and
-  students read its banner with `nc` to identify it.

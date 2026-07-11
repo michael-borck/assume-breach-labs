@@ -104,12 +104,3 @@ Collect **Q1–Q8** into your lab journal, with:
 - **Optional enrichment (needs internet):** the government-run
   [eSafety quizzes](https://www.esafety.gov.au) are worth trying too, but they're external and not
   required for this lab.
-
-### Instructor notes
-
-- The certificate sites are a self-hosted stand-in for badssl.com — three distinct failure modes so
-  students see that "certificate warning" isn't one thing. Chrome shows a full-page interstitial and
-  makes them click through; that friction is the teaching point of Q8.
-- The quiz is self-contained HTML (no backend, no tracking); edit `quiz/index.html` to add questions.
-- The two external quizzes from the original lab are kept only as optional enrichment links, since we
-  can't self-host third-party content — the graded hands-on weight is on the self-hosted pieces.

@@ -164,12 +164,3 @@ Linux system after `connect station`:
 Try `connect station` and run `john --show --format=NT hashes/windows-ntlm.txt` yourself — you'll see
 the full recovered credentials. The real rockyou wordlist is also on the machine at
 `/usr/share/wordlists/rockyou.txt` if you want a bigger dictionary.
-
-### Instructor notes
-
-- The workstation is built on the shared `assume-breach-base` image, which carries the **jumbo**
-  John the Ripper (the plain Debian John lacks the `raw-md5`/`raw-sha256`/`NT` formats).
-- All hashes are of deliberately weak passwords that appear in the small baked wordlist, so cracking
-  is instant in a 1-hour workshop. Point students at `rockyou.txt` for a realistic-scale run.
-- The zip password (`dragon`) is in the wordlist; the archive is genuinely encrypted.
-- Data is baked into the image (~10 KB) — no bind mounts, portable everywhere.

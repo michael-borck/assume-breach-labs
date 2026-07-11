@@ -134,13 +134,3 @@ Collect **Q1–Q8** into your lab journal, with:
 
 After `connect station` you can read the raw `.eml` files and the author texts, and run the tools
 with your own arguments.
-
-### Instructor notes
-
-- The author texts are real, public-domain Federalist Papers (Project Gutenberg #1404), split by
-  author with `generate-corpus.py`. The "unknown" is Paper 51 (Madison), held out of the training set.
-- Stylometry uses word-length distribution + chi-square — simple enough to explain in a lab, and it
-  gets the historically-correct answer (Madison < Hamilton < Jay).
-- The three `.eml` files are crafted to show a clean case of each: genuine, spoofed/phishing (auth
-  fails, sender domains disagree), and authenticated-but-unwanted spam (auth passes, spam score high).
-- All offline — no Talos/MXToolbox/Google header tool needed (those external links had died anyway).
