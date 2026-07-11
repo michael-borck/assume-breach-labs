@@ -1,0 +1,16 @@
+Return-Path: <newsletter@techweekly.com>
+Received: from mail.techweekly.com (mail.techweekly.com [198.51.100.24])
+	by mx.example.edu (Postfix) with ESMTPS id A1B2C3D4
+	for <student@example.edu>; Mon, 06 Jul 2026 09:14:22 +0800
+Received: from news.techweekly.com (news.techweekly.com [198.51.100.30])
+	by mail.techweekly.com (Postfix) with ESMTP id D4E5F6A7
+	for <student@example.edu>; Mon, 06 Jul 2026 01:14:20 +0000
+Authentication-Results: mx.example.edu; spf=pass smtp.mailfrom=techweekly.com; dkim=pass header.d=techweekly.com; dmarc=pass
+From: Tech Weekly <newsletter@techweekly.com>
+Reply-To: newsletter@techweekly.com
+To: student@example.edu
+Subject: Your weekly technology digest
+Date: Mon, 06 Jul 2026 01:14:19 +0000
+Message-ID: <20260706011419.D4E5F6A7@techweekly.com>
+
+This week in technology: new releases, security updates, and more.

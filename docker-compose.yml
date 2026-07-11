@@ -155,6 +155,21 @@ services:
       - "3006:3000"
 
   # ======================================================================
+  # Module 08 — Digital Forensics. A single workstation with two offline Python
+  # tools: mailtrace (email header analysis) and stylometry (authorship). Text
+  # data only; replaces the online header tools + Windows 'Signature' app.
+  # ======================================================================
+  m08-station:
+    build:
+      context: ./modules/module-08-forensics/station
+      dockerfile: Dockerfile
+    image: ghcr.io/michael-borck/assume-breach-forensics:latest
+    container_name: m08-station
+    hostname: station
+    profiles: ["module-08"]
+    command: ["sleep", "infinity"]
+
+  # ======================================================================
   # Module 07 — Firewalls (replaces the Windows-only iNetworkSimulator with
   # real iptables/nftables across two routed networks).
   #

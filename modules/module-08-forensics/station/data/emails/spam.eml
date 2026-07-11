@@ -1,0 +1,14 @@
+Return-Path: <deals@mega-savings-offers.biz>
+Received: from bulk.mega-savings-offers.biz (bulk.mega-savings-offers.biz [203.0.113.66])
+	by mx.example.edu (Postfix) with ESMTP id BULK0199
+	for <student@example.edu>; Wed, 08 Jul 2026 12:00:00 +0800
+Authentication-Results: mx.example.edu; spf=pass smtp.mailfrom=mega-savings-offers.biz; dkim=pass; dmarc=pass
+X-Spam-Status: Yes, score=9.8 required=5.0 tests=BAYES_99,HTML_MESSAGE,URI_HEX
+From: Mega Savings <deals@mega-savings-offers.biz>
+Reply-To: deals@mega-savings-offers.biz
+To: undisclosed-recipients:;
+Subject: You WON a $1000 gift card !!!
+Date: Wed, 08 Jul 2026 12:00:00 +0800
+Message-ID: <bulk0199@mega-savings-offers.biz>
+
+CONGRATULATIONS! You have been selected. Claim your prize today.

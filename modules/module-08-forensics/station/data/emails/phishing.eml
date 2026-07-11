@@ -1,0 +1,13 @@
+Return-Path: <billing@secure-verify-account.ru>
+Received: from unknown (relay77.secure-verify-account.ru [45.137.22.90])
+	by mx.example.edu (Postfix) with ESMTP id 9F8A7B6C
+	for <student@example.edu>; Tue, 07 Jul 2026 03:41:55 +0800
+Authentication-Results: mx.example.edu; spf=fail smtp.mailfrom=secure-verify-account.ru; dkim=none; dmarc=fail
+From: PayPal Service <service@paypal.com>
+Reply-To: account-recovery@secure-verify-account.ru
+To: student@example.edu
+Subject: Urgent: your account has been limited
+Date: Tue, 07 Jul 2026 03:41:50 +0800
+Message-ID: <9f8a7b6c@secure-verify-account.ru>
+
+Dear customer, we detected unusual activity. Verify your details now to avoid suspension.

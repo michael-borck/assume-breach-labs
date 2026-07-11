@@ -39,7 +39,7 @@ with plain commands like `ping pc2 pc1` and `rules load`. No `docker` typing. Fo
 | **[05](modules/module-05-risk/)** | **Risk management (in-browser SLE/ALE calculator)** | **ready** | `module-05-risk/LAB-GUIDE.md` |
 | **[06](modules/module-06-packet-capture/)** | **Packet capture & analysis (Wireshark-in-browser)** | **ready** | `module-06-packet-capture/LAB-GUIDE.md` |
 | **[07](modules/module-07-firewalls/)** | **Firewalls (real iptables/nftables)** | **ready** | `module-07-firewalls/LAB-GUIDE.md` |
-| 08 | Digital forensics (email headers + stylometry) | *planned* | — |
+| **[08](modules/module-08-forensics/)** | **Digital forensics (email headers + stylometry)** | **ready** | `module-08-forensics/LAB-GUIDE.md` |
 | 09 | Human factors (self-hosted quizzes + broken-cert site) | *planned* | — |
 
 Going further / extension labs for advanced students: [`GOING-FURTHER.md`](GOING-FURTHER.md).

@@ -18,6 +18,7 @@ on:
       - modules/module-04-cryptography/**
       - modules/module-05-risk/**
       - modules/module-06-packet-capture/**
+      - modules/module-08-forensics/**
       - .github/workflows/build-modules.yml
   workflow_dispatch:
 
@@ -52,6 +53,9 @@ jobs:
           - name: assume-breach-wireshark
             context: modules/module-06-packet-capture/wireshark
             file: modules/module-06-packet-capture/wireshark/Dockerfile
+          - name: assume-breach-forensics
+            context: modules/module-08-forensics/station
+            file: modules/module-08-forensics/station/Dockerfile
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
