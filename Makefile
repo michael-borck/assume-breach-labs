@@ -46,7 +46,7 @@ m02:
 m03:
 	$(call RUN_MODULE,03)
 m04:
-	@echo "Module 04 not built yet."
+	$(call RUN_MODULE,04)
 m05:
 	@echo "Module 05 not built yet."
 m06:
@@ -62,12 +62,13 @@ stop:
 	$(COMPOSE) stop
 
 down:
-	$(COMPOSE) --profile module-02 --profile module-03 --profile module-07 down --remove-orphans
+	$(COMPOSE) --profile module-02 --profile module-03 --profile module-04 --profile module-07 down --remove-orphans
 
 status:
 	@echo "Assume Breach Labs — module availability:"
 	@echo "  module-00: setup docs (modules/module-00-setup/README.md)"
 	@echo "  module-02: ready       (make m02  /  ./start.sh)"
 	@echo "  module-03: ready       (make m03  /  ./start.sh)"
+	@echo "  module-04: ready       (make m04  /  ./start.sh)"
 	@echo "  module-07: ready       (make m07  /  ./start.sh)"
 	@echo "  others:    planned"

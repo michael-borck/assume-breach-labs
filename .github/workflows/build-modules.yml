@@ -14,6 +14,7 @@ on:
       - modules/module-07-firewalls/**
       - modules/module-03-password-attacks/**
       - modules/module-02-port-scanning/**
+      - modules/module-04-cryptography/**
       - .github/workflows/build-modules.yml
   workflow_dispatch:
 
@@ -36,6 +37,9 @@ jobs:
           - name: assume-breach-target
             context: modules/module-02-port-scanning/target
             file: modules/module-02-port-scanning/target/Dockerfile
+          - name: assume-breach-crypto
+            context: modules/module-04-cryptography/station
+            file: modules/module-04-cryptography/station/Dockerfile
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3

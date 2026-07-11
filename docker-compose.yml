@@ -90,6 +90,21 @@ services:
     command: ["sleep", "infinity"]
 
   # ======================================================================
+  # Module 04 — Cryptography. A single self-contained workstation with the
+  # cipher tool + GnuPG. All offline; replaces the original lab's web tools
+  # (rumkin, pgpkeygen, onlinepgp).
+  # ======================================================================
+  m04-station:
+    build:
+      context: ./modules/module-04-cryptography/station
+      dockerfile: Dockerfile
+    image: ghcr.io/michael-borck/assume-breach-crypto:latest
+    container_name: m04-station
+    hostname: station
+    profiles: ["module-04"]
+    command: ["sleep", "infinity"]
+
+  # ======================================================================
   # Module 07 — Firewalls (replaces the Windows-only iNetworkSimulator with
   # real iptables/nftables across two routed networks).
   #

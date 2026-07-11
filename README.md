@@ -35,7 +35,7 @@ with plain commands like `ping pc2 pc1` and `rules load`. No `docker` typing. Fo
 | 01 | Access control & isolation | *planned* | — |
 | **[02](modules/module-02-port-scanning/)** | **Port scanning & enumeration (nmap)** | **ready** | `module-02-port-scanning/LAB-GUIDE.md` |
 | **[03](modules/module-03-password-attacks/)** | **Password attacks (John the Ripper, fcrackzip)** | **ready** | `module-03-password-attacks/LAB-GUIDE.md` |
-| 04 | Cryptography | *planned* | — |
+| **[04](modules/module-04-cryptography/)** | **Cryptography (classic ciphers + real PGP/GnuPG)** | **ready** | `module-04-cryptography/LAB-GUIDE.md` |
 | 05 | Risk management (in-browser calculator) | *planned* | — |
 | 06 | Packet capture & analysis (Wireshark-in-browser) | *planned* | — |
 | **[07](modules/module-07-firewalls/)** | **Firewalls (real iptables/nftables)** | **ready** | `module-07-firewalls/LAB-GUIDE.md` |
