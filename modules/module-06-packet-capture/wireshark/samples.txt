@@ -1,0 +1,15 @@
+# Real-world sample captures to download on demand.
+#
+# We do NOT redistribute these — the lab links to them and downloads them into the
+# running container only when a student runs `fetch`. This keeps the repo free of
+# third-party capture files whose licensing we don't control.
+#
+# Format:   <url>  |  <optional local filename>
+# Lines starting with # and blank lines are ignored.
+#
+# COORDINATOR: curate this list. Add any captures you have the right to link to
+# (e.g. your own, or clearly-licensed teaching sets). The two below are from the
+# Wireshark project's own GPL-licensed test-capture suite.
+
+https://gitlab.com/wireshark/wireshark/-/raw/master/test/captures/http.pcap      | sample-http.pcap
+https://gitlab.com/wireshark/wireshark/-/raw/master/test/captures/dns_port.pcap  | sample-dns.pcap

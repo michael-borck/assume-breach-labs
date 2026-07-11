@@ -121,6 +121,25 @@ services:
       - "8055:80"
 
   # ======================================================================
+  # Module 06 — Packet Capture & Analysis. Wireshark in the browser
+  # (LinuxServer.io, web GUI on 3000 -> host 3006). Our teaching captures are
+  # baked into /pcaps; `fetch` downloads extra real-world samples on demand.
+  # ======================================================================
+  m06-wireshark:
+    build:
+      context: ./modules/module-06-packet-capture/wireshark
+      dockerfile: Dockerfile
+    image: ghcr.io/michael-borck/assume-breach-wireshark:latest
+    container_name: m06-wireshark
+    hostname: wireshark
+    profiles: ["module-06"]
+    cap_add: ["NET_ADMIN"]
+    security_opt: ["seccomp:unconfined"]
+    shm_size: "1gb"
+    ports:
+      - "3006:3000"
+
+  # ======================================================================
   # Module 07 — Firewalls (replaces the Windows-only iNetworkSimulator with
   # real iptables/nftables across two routed networks).
   #

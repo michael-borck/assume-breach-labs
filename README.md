@@ -37,7 +37,7 @@ with plain commands like `ping pc2 pc1` and `rules load`. No `docker` typing. Fo
 | **[03](modules/module-03-password-attacks/)** | **Password attacks (John the Ripper, fcrackzip)** | **ready** | `module-03-password-attacks/LAB-GUIDE.md` |
 | **[04](modules/module-04-cryptography/)** | **Cryptography (classic ciphers + real PGP/GnuPG)** | **ready** | `module-04-cryptography/LAB-GUIDE.md` |
 | **[05](modules/module-05-risk/)** | **Risk management (in-browser SLE/ALE calculator)** | **ready** | `module-05-risk/LAB-GUIDE.md` |
-| 06 | Packet capture & analysis (Wireshark-in-browser) | *planned* | — |
+| **[06](modules/module-06-packet-capture/)** | **Packet capture & analysis (Wireshark-in-browser)** | **ready** | `module-06-packet-capture/LAB-GUIDE.md` |
 | **[07](modules/module-07-firewalls/)** | **Firewalls (real iptables/nftables)** | **ready** | `module-07-firewalls/LAB-GUIDE.md` |
 | 08 | Digital forensics (email headers + stylometry) | *planned* | — |
 | 09 | Human factors (self-hosted quizzes + broken-cert site) | *planned* | — |
