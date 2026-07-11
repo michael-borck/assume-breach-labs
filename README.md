@@ -1,7 +1,9 @@
 # Assume Breach — Labs
 
 A self-contained, Docker-based lab series for a first course in **defensive information
-security**. Every exercise runs in containers — no virtual machine, no Windows image, and (with
+security**.
+
+**▶ Student front door: https://michael-borck.github.io/assume-breach-labs/** Every exercise runs in containers — no virtual machine, no Windows image, and (with
 one small exception) no dependence on external websites. The practical companion to the
 *Assume Breach* book.
 
