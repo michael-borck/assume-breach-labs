@@ -32,7 +32,7 @@ with plain commands like `ping pc2 pc1` and `rules load`. No `docker` typing. Fo
 | Module | Topic | Runs | Guide |
 |--------|-------|------|-------|
 | [00](modules/module-00-setup/) | Environment setup (install Docker, smoke test) | docs | `module-00-setup/README.md` |
-| 01 | Access control & isolation | *planned* | — |
+| **[01](modules/module-01-access-control/)** | **Access control & isolation (users, groups, permissions, ACLs)** | **ready** | `module-01-access-control/LAB-GUIDE.md` |
 | **[02](modules/module-02-port-scanning/)** | **Port scanning & enumeration (nmap)** | **ready** | `module-02-port-scanning/LAB-GUIDE.md` |
 | **[03](modules/module-03-password-attacks/)** | **Password attacks (John the Ripper, fcrackzip)** | **ready** | `module-03-password-attacks/LAB-GUIDE.md` |
 | **[04](modules/module-04-cryptography/)** | **Cryptography (classic ciphers + real PGP/GnuPG)** | **ready** | `module-04-cryptography/LAB-GUIDE.md` |

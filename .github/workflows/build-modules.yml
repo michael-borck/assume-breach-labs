@@ -11,6 +11,7 @@ on:
   push:
     branches: [main]
     paths:
+      - modules/module-01-access-control/**
       - modules/module-07-firewalls/**
       - modules/module-03-password-attacks/**
       - modules/module-02-port-scanning/**
@@ -30,6 +31,9 @@ jobs:
     strategy:
       matrix:
         include:
+          - name: assume-breach-accesslab
+            context: modules/module-01-access-control/station
+            file: modules/module-01-access-control/station/Dockerfile
           - name: assume-breach-node
             context: modules/module-07-firewalls
             file: modules/module-07-firewalls/node/Dockerfile

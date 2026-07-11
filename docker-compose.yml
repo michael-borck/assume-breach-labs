@@ -16,6 +16,21 @@
 services:
 
   # ======================================================================
+  # Module 01 — Access Control & Isolation. A single Linux workstation where
+  # the student is root, managing users/groups/permissions/ACLs on an office
+  # fileshare. Replaces the Windows-XP NTFS-permissions lab.
+  # ======================================================================
+  m01-station:
+    build:
+      context: ./modules/module-01-access-control/station
+      dockerfile: Dockerfile
+    image: ghcr.io/michael-borck/assume-breach-accesslab:latest
+    container_name: m01-station
+    hostname: station
+    profiles: ["module-01"]
+    command: ["sleep", "infinity"]
+
+  # ======================================================================
   # Module 02 — Port Scanning. An attacker workstation (nmap) and a small
   # internal target network with hosts running different services. Replaces
   # the original lab's scans of live internet hosts — lawful and reliable.
