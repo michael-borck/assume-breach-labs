@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Security Awareness Quiz — Assume Breach Labs</title>
+<style>
+  :root {
+    --bg:#eef1f6; --surface:#fff; --surface-2:#f6f8fb; --ink:#14202e; --muted:#5b6775;
+    --line:#dde3ec; --accent:#256b64; --accent-soft:#d7ebe8;
+    --good:#1c7a44; --good-soft:#dbf0e3; --bad:#b23b32; --bad-soft:#f6dedb;
+    --shadow:0 1px 2px rgba(20,32,46,.06),0 8px 24px rgba(20,32,46,.06);
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --bg:#0e1520;--surface:#161f2c;--surface-2:#1b2634;--ink:#e6ecf3;--muted:#93a1b1;
+    --line:#27313f;--accent:#52b3a8;--accent-soft:#123531;--good:#4cc47e;--good-soft:#123626;
+    --bad:#f0796d;--bad-soft:#3a1e1b;--shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);}}
+  :root[data-theme="light"]{--bg:#eef1f6;--surface:#fff;--surface-2:#f6f8fb;--ink:#14202e;
+    --muted:#5b6775;--line:#dde3ec;--accent:#256b64;--accent-soft:#d7ebe8;--good:#1c7a44;
+    --good-soft:#dbf0e3;--bad:#b23b32;--bad-soft:#f6dedb;--shadow:0 1px 2px rgba(20,32,46,.06),0 8px 24px rgba(20,32,46,.06);}
+  :root[data-theme="dark"]{--bg:#0e1520;--surface:#161f2c;--surface-2:#1b2634;--ink:#e6ecf3;
+    --muted:#93a1b1;--line:#27313f;--accent:#52b3a8;--accent-soft:#123531;--good:#4cc47e;
+    --good-soft:#123626;--bad:#f0796d;--bad-soft:#3a1e1b;--shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);}
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:760px;margin:0 auto;padding:32px 20px 64px}
+  header.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+  .eyebrow{text-transform:uppercase;letter-spacing:.12em;font-size:12px;font-weight:700;color:var(--accent);margin:0 0 6px}
+  h1{margin:0;font-size:clamp(26px,4vw,32px);font-weight:800;letter-spacing:-.02em;text-wrap:balance}
+  .lede{color:var(--muted);margin:10px 0 0;max-width:60ch}
+  .theme-btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;
+    padding:8px 14px;font:inherit;font-size:13px;cursor:pointer}
+  .theme-btn:hover{border-color:var(--accent)}
+  .theme-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  .q{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:16px 0;box-shadow:var(--shadow)}
+  .q .tag{font-size:12px;text-transform:uppercase;letter-spacing:.07em;font-weight:700;color:var(--accent)}
+  .q h2{font-size:17px;margin:6px 0 14px;font-weight:700;text-wrap:balance}
+  .scenario{background:var(--surface-2);border:1px solid var(--line);border-left:3px solid var(--muted);
+    border-radius:8px;padding:10px 12px;margin:0 0 14px;font-size:14px;white-space:pre-wrap}
+  label.opt{display:flex;gap:10px;align-items:flex-start;padding:9px 11px;border:1px solid var(--line);
+    border-radius:9px;margin:7px 0;cursor:pointer;transition:border-color .12s,background .12s}
+  label.opt:hover{border-color:var(--accent)}
+  label.opt input{margin-top:3px}
+  .feedback{margin-top:12px;font-size:14px;padding:10px 12px;border-radius:9px;display:none}
+  .feedback.show{display:block}
+  .feedback.correct{background:var(--good-soft);color:var(--good)}
+  .feedback.wrong{background:var(--bad-soft);color:var(--bad)}
+  .opt.markCorrect{border-color:var(--good);background:var(--good-soft)}
+  .opt.markWrong{border-color:var(--bad);background:var(--bad-soft)}
+
+  .actions{display:flex;align-items:center;gap:16px;margin-top:24px;flex-wrap:wrap}
+  button.score{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px 22px;
+    font:inherit;font-weight:700;cursor:pointer}
+  button.score:hover{filter:brightness(1.06)}
+  button.score:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  #result{font-weight:800;font-size:20px}
+  #result .num{font-variant-numeric:tabular-nums}
+  footer{margin-top:28px;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">Assume Breach Labs · Module 09</p>
+      <h1>Security Awareness Quiz</h1>
+      <p class="lede">Most breaches start with a person, not a computer. Read each one, choose an
+        answer, then score yourself — the explanations are the point.</p>
+    </div>
+    <button class="theme-btn" id="themeBtn" type="button" aria-label="Toggle light or dark theme">◐ Theme</button>
+  </header>
+
+  <form id="quiz"></form>
+
+  <div class="actions">
+    <button class="score" id="scoreBtn" type="button">Score my answers</button>
+    <span id="result"></span>
+  </div>
+
+  <footer>Nothing you choose leaves this page — it runs entirely in your browser, offline.</footer>
+</div>
+
+<script>
+  const QUESTIONS = [
+    { tag:"Phishing",
+      q:"An email lands in your inbox. Is it phishing?",
+      scenario:"From: PayPal Service <service@paypa1-secure.com>\nSubject: Your account has been LIMITED — verify within 24 hours\n\"Click here to restore access: http://paypa1-secure.com/verify\"",
+      opts:["Phishing","Legitimate"], answer:0,
+      why:"Phishing. The domain is paypa1-secure.com (a '1' for the 'l', and not paypal.com), plus urgency and a link to 'verify'. Real providers don't ask you to restore access via an emailed link." },
+    { tag:"Phishing",
+      q:"Is this internal email phishing?",
+      scenario:"From: IT Service Desk <helpdesk@yourcompany.com>\nSubject: Planned maintenance this Saturday 2am–4am\n\"Email and file services will be briefly unavailable. No action is needed.\"",
+      opts:["Phishing","Legitimate"], answer:1,
+      why:"Legitimate. It comes from the real internal domain, asks for nothing, has no link, and creates no urgency to click. Not every unexpected email is an attack." },
+    { tag:"Phishing",
+      q:"A text message arrives. Phishing?",
+      scenario:"\"AusPost: your parcel is held pending a $2.99 redelivery fee. Pay now: bit.ly/au-parcel-x7\"",
+      opts:["Phishing (smishing)","Legitimate"], answer:0,
+      why:"Phishing by SMS ('smishing'). A tiny fee is bait to capture your card details; the shortened link hides the real destination. Couriers don't collect fees via random texts." },
+    { tag:"Passwords",
+      q:"Which of these is the strongest password?",
+      opts:["P@ssw0rd!","purple-tractor-window-cloud","your dog's name + year","Summer2024"], answer:1,
+      why:"A long, random passphrase ('purple-tractor-window-cloud') has far more combinations than a short 'complex' one. Length beats fiddly symbols — and it's easier to remember." },
+    { tag:"Social engineering",
+      q:"Someone phones: \"This is IT support, we're fixing your account and need your password to continue.\" You should:",
+      opts:["Give it so they can help","Refuse — verify through a known channel","Give a slightly wrong one"], answer:1,
+      why:"Never give your password to anyone, ever — real IT never needs it. Hang up and call IT back on a number you already trust. This phone version of phishing is called 'vishing'." },
+    { tag:"Removable media",
+      q:"You find a USB stick in the car park labelled \"Payroll 2026\". You:",
+      opts:["Plug it in to find the owner","Hand it to IT/security, unopened","Plug it into a spare PC just to peek"], answer:1,
+      why:"Don't plug it in. 'Lost' USB drives are a classic way to get malware onto a network — curiosity is the exploit. Give it to security unopened." },
+    { tag:"Account safety",
+      q:"One website you use gets breached and passwords leak. What limits the damage most?",
+      opts:["A unique password per site, plus MFA","Changing that one password","Using the same strong password everywhere"], answer:0,
+      why:"Unique passwords mean a leak on one site can't unlock the others (attackers try leaked passwords everywhere — 'credential stuffing'). MFA blocks logins even if a password is known." },
+    { tag:"Certificates",
+      q:"Your browser warns \"this site's certificate is not trusted\" when you visit your bank. You should:",
+      opts:["Click through — it's probably fine","Stop — the connection may be intercepted","Turn off the warning"], answer:1,
+      why:"Don't proceed. That warning can mean someone is intercepting the connection (a fake certificate). On a real bank you'd never see it. You met these warnings on purpose at the broken-certificate sites in this lab." },
+  ];
+
+  const form = document.getElementById("quiz");
+  QUESTIONS.forEach((item, qi) => {
+    const q = document.createElement("div");
+    q.className = "q"; q.id = "q" + qi;
+    let html = `<div class="tag">${item.tag}</div><h2>${item.q}</h2>`;
+    if (item.scenario) html += `<div class="scenario">${item.scenario.replace(/</g,"&lt;")}</div>`;
+    item.opts.forEach((opt, oi) => {
+      html += `<label class="opt" data-oi="${oi}"><input type="radio" name="q${qi}" value="${oi}"><span>${opt}</span></label>`;
+    });
+    html += `<div class="feedback" id="fb${qi}"></div>`;
+    q.innerHTML = html;
+    form.appendChild(q);
+  });
+
+  document.getElementById("scoreBtn").addEventListener("click", () => {
+    let score = 0;
+    QUESTIONS.forEach((item, qi) => {
+      const chosen = form.querySelector(`input[name="q${qi}"]:checked`);
+      const fb = document.getElementById("fb" + qi);
+      document.querySelectorAll(`#q${qi} .opt`).forEach(l => l.classList.remove("markCorrect","markWrong"));
+      const correctLabel = document.querySelector(`#q${qi} .opt[data-oi="${item.answer}"]`);
+      correctLabel.classList.add("markCorrect");
+      fb.className = "feedback show";
+      if (chosen && Number(chosen.value) === item.answer) {
+        score++;
+        fb.classList.add("correct");
+        fb.textContent = "Correct. " + item.why;
+      } else {
+        fb.classList.add("wrong");
+        if (chosen) document.querySelector(`#q${qi} .opt[data-oi="${chosen.value}"]`).classList.add("markWrong");
+        fb.textContent = (chosen ? "Not quite. " : "No answer — ") + item.why;
+      }
+    });
+    const r = document.getElementById("result");
+    r.innerHTML = `You scored <span class="num">${score} / ${QUESTIONS.length}</span>`;
+    document.getElementById("q0").scrollIntoView({behavior:"smooth", block:"start"});
+  });
+
+  const btn = document.getElementById("themeBtn");
+  btn.addEventListener("click", () => {
+    const cur = document.documentElement.getAttribute("data-theme");
+    const next = cur === "dark" ? "light" : cur === "light" ? "dark"
+      : (matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "dark");
+    document.documentElement.setAttribute("data-theme", next);
+  });
+</script>
+</body>
+</html>

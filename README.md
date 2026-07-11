@@ -40,7 +40,7 @@ with plain commands like `ping pc2 pc1` and `rules load`. No `docker` typing. Fo
 | **[06](modules/module-06-packet-capture/)** | **Packet capture & analysis (Wireshark-in-browser)** | **ready** | `module-06-packet-capture/LAB-GUIDE.md` |
 | **[07](modules/module-07-firewalls/)** | **Firewalls (real iptables/nftables)** | **ready** | `module-07-firewalls/LAB-GUIDE.md` |
 | **[08](modules/module-08-forensics/)** | **Digital forensics (email headers + stylometry)** | **ready** | `module-08-forensics/LAB-GUIDE.md` |
-| 09 | Human factors (self-hosted quizzes + broken-cert site) | *planned* | — |
+| **[09](modules/module-09-human-factors/)** | **Human factors (self-hosted quiz + broken-cert sites)** | **ready** | `module-09-human-factors/LAB-GUIDE.md` |
 
 Going further / extension labs for advanced students: [`GOING-FURTHER.md`](GOING-FURTHER.md).
 

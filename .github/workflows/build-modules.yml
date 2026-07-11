@@ -19,6 +19,7 @@ on:
       - modules/module-05-risk/**
       - modules/module-06-packet-capture/**
       - modules/module-08-forensics/**
+      - modules/module-09-human-factors/**
       - .github/workflows/build-modules.yml
   workflow_dispatch:
 
@@ -56,6 +57,12 @@ jobs:
           - name: assume-breach-forensics
             context: modules/module-08-forensics/station
             file: modules/module-08-forensics/station/Dockerfile
+          - name: assume-breach-quiz
+            context: modules/module-09-human-factors/quiz
+            file: modules/module-09-human-factors/quiz/Dockerfile
+          - name: assume-breach-badcerts
+            context: modules/module-09-human-factors/badcerts
+            file: modules/module-09-human-factors/badcerts/Dockerfile
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3

@@ -170,6 +170,36 @@ services:
     command: ["sleep", "infinity"]
 
   # ======================================================================
+  # Module 09 — Human Factors. Two browser pieces: a self-hosted security
+  # awareness quiz (nginx, :8090) and a set of HTTPS sites with deliberately
+  # broken certificates (:8443-8445) so students see real browser warnings.
+  # Replaces the external OpenDNS/eSafety quizzes and badssl.com.
+  # ======================================================================
+  m09-quiz:
+    build:
+      context: ./modules/module-09-human-factors/quiz
+      dockerfile: Dockerfile
+    image: ghcr.io/michael-borck/assume-breach-quiz:latest
+    container_name: m09-quiz
+    hostname: quiz
+    profiles: ["module-09"]
+    ports:
+      - "8090:80"
+
+  m09-certs:
+    build:
+      context: ./modules/module-09-human-factors/badcerts
+      dockerfile: Dockerfile
+    image: ghcr.io/michael-borck/assume-breach-badcerts:latest
+    container_name: m09-certs
+    hostname: badcerts
+    profiles: ["module-09"]
+    ports:
+      - "8443:8443"
+      - "8444:8444"
+      - "8445:8445"
+
+  # ======================================================================
   # Module 07 — Firewalls (replaces the Windows-only iNetworkSimulator with
   # real iptables/nftables across two routed networks).
   #
