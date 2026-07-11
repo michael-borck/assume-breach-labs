@@ -1,4 +1,4 @@
-.PHONY: help pull-base build-base m00 m01 m02 m03 m04 m05 m06 m07 m08 m09 stop down status
+.PHONY: help pull-base build-base m00 m01 m02 m03 m04 m05 m06 m07 m08 m09 m10 stop down status
 
 # Shared toolbox image. Default is the prebuilt GHCR image (just pull it).
 # Override to build locally: `make build-base`.
@@ -57,6 +57,8 @@ m08:
 	$(call RUN_MODULE,08)
 m09:
 	$(call RUN_MODULE,09)
+m10:
+	$(call RUN_MODULE,10)
 
 stop:
 	$(COMPOSE) stop

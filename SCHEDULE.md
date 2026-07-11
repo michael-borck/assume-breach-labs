@@ -20,14 +20,14 @@ one tuition-free week, and no workshop in the catch-up week. Adjust to your own 
 | — | Catch-up + assignment | Week 6 | (no new lab) | |
 | — | *Tuition-free week* | Week 7 | — | |
 | 06 | Packet capture & analysis | Week 8 | Workshop 6 (Lab 7) | Lab numbering runs one behind week numbering from here |
-| 07 | Firewalls | Weeks 9–10 | Workshops 7–8 (Labs 8–9) | Spans two workshops |
+| 07 | Firewalls | Week 9 | Workshop 7 (Lab 8) | |
+| 10 | Web security | Week 10 | Workshop 8 (Lab 9) | Deliberately vulnerable app (OWASP Juice Shop) |
 | 08 | Digital forensics | Week 11 | Workshop 9 (Lab 10) | Report/assessment week |
 | 09 | Human factors | Week 12 | Workshop 10 | |
 | — | Revision | Week 13 | — | |
 
-> **Two quirks to preserve if you keep this cadence:** there is no Week 7 (tuition-free), and the
-> firewall module deliberately spans two workshops. Directories here are named by **module**;
-> your worksheets/passport can be named by **workshop/lab number**.
+> **A quirk to preserve if you keep this cadence:** there is no Week 7 (tuition-free). Directories
+> here are named by **module**; your worksheets/passport can be named by **workshop/lab number**.
 
 ## Assessment tie-in
 

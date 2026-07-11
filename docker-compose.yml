@@ -303,6 +303,20 @@ services:
       m07-inside:
         ipv4_address: 10.1.1.253
 
+  # ======================================================================
+  # Module 10 — Web Security. A deliberately vulnerable web app (OWASP
+  # Juice Shop, public image, pull-only). Students exploit SQL injection,
+  # XSS and broken authentication in a safe, legal target, then map each
+  # flaw to a defence. Browser-based, no CLI.
+  # ======================================================================
+  m10-web:
+    image: bkimminich/juice-shop:latest
+    container_name: m10-web
+    hostname: webapp
+    profiles: ["module-10"]
+    ports:
+      - "3010:3000"
+
 networks:
   m02-net:
     name: m02-net
