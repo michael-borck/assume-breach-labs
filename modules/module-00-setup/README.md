@@ -20,24 +20,31 @@ docker run --rm hello-world
 docker compose version      # must be Compose v2 (the "docker compose" subcommand)
 ```
 
-## 2. Get the labs
+## 2. Get the labs (no git needed)
 
-```bash
-git clone https://github.com/michael-borck/assume-breach-labs.git
-cd assume-breach-labs
-```
+Download the ZIP and unzip it — you'll get a folder called `assume-breach-labs-main`:
 
-## 3. Pull the toolbox image
+**https://github.com/michael-borck/assume-breach-labs/archive/refs/heads/main.zip**
 
-Most modules share one toolbox image. Pull it once:
+(If you do have git, `git clone https://github.com/michael-borck/assume-breach-labs.git` works too.)
 
-```bash
-make pull-base
-```
+## 3. Launch it
 
-> Prefer to build it yourself (offline, or to see what's inside)? Run `make build-base`.
-> On an external/exFAT drive on macOS, if the build errors on `._` files, use
-> `DOCKER_BUILDKIT=0 make build-base`.
+You start every lab the same way — the first run pulls the images it needs automatically.
+
+- **macOS:** double-click **`start.command`** in the folder. First time, if macOS blocks it, right-click
+  it → **Open** → **Open**. (Or in Terminal: `cd` into the folder and run `./start.sh`.)
+- **Windows:** Docker Desktop installs **WSL2** (a built-in Ubuntu). Open **Ubuntu** from the Start
+  menu, `cd` to the folder — e.g. `cd /mnt/c/Users/YOU/Desktop/assume-breach-labs-main` — and run
+  `./start.sh`. *Alternative:* install [Git for Windows](https://git-scm.com/download/win) and
+  double-click **`start.bat`**.
+- **Linux:** open a terminal in the folder and run `./start.sh`.
+
+> Double-clicking `start.sh` itself does **not** work (the file browser opens it in a text editor).
+> Use `start.command` (Mac) / `start.bat` (Windows), or run `./start.sh` from a terminal.
+
+> Offline or want to pre-fetch the shared toolbox image? Run `make pull-base` (or `make build-base` to
+> build it locally; on an exFAT drive prefix with `DOCKER_BUILDKIT=0`).
 
 ## 4. Smoke-test a lab
 

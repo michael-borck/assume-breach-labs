@@ -76,16 +76,28 @@
   @keyframes blink{50%{opacity:0}}
   @media (prefers-reduced-motion:reduce){.cursor{animation:none}}
 
-  /* setup band */
-  .setup{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);
-    border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);display:grid;
-    grid-template-columns:auto 1fr;gap:18px;align-items:center;margin:8px 0 40px}
-  @media (max-width:640px){.setup{grid-template-columns:1fr}}
-  .setup .n{font-size:13px;font-weight:800;color:var(--accent);letter-spacing:.06em}
-  .setup h3{margin:2px 0 4px;font-size:17px}
-  .setup p{margin:0;color:var(--muted);font-size:14px}
-  .setup .cmd{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:7px 11px;
-    font-size:13px;white-space:nowrap;color:var(--ink)}
+  /* get started */
+  .start{margin:8px 0 44px}
+  .steps{display:grid;gap:14px;margin-top:20px}
+  .step{display:grid;grid-template-columns:auto 1fr;gap:16px;background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow)}
+  .step .sn{width:34px;height:34px;border-radius:9px;background:var(--accent);color:#fff;font-weight:800;
+    display:grid;place-items:center;font-size:16px}
+  .step h3{margin:3px 0 6px;font-size:17px}
+  .step p{margin:0;color:var(--muted);font-size:14.5px}
+  .ziplink{font-weight:700}
+  .ostabs{display:flex;gap:8px;margin:14px 0 12px;flex-wrap:wrap}
+  .ostabs button{border:1px solid var(--line);background:var(--surface-2);color:var(--muted);border-radius:999px;
+    padding:6px 15px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+  .ostabs button[aria-selected="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .ostabs button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .ospane{display:none}
+  .ospane.on{display:block}
+  .ospane ol{margin:0;padding-left:20px;font-size:14.5px;color:var(--ink)}
+  .ospane ol li{margin:7px 0}
+  .cmd{display:inline-block;background:var(--term-bg);color:var(--term-ink);border-radius:7px;
+    padding:3px 9px;font-family:ui-monospace,monospace;font-size:12.5px;margin:3px 0}
+  .ospane .tip{margin:10px 0 0;font-size:13px;color:var(--muted)}
 
   /* section heading */
   .sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin:0 0 6px;flex-wrap:wrap}
@@ -159,8 +171,8 @@
         browser. Real tools — nmap, Wireshark, John the Ripper, iptables — with the plumbing hidden.
         You just log in and start.</p>
       <div class="cta">
-        <a class="btn primary" href="#modules">Browse the modules</a>
-        <a class="btn ghost" href="https://michael-borck.github.io/assume-breach/" target="_blank" rel="noopener">Read the companion book</a>
+        <a class="btn primary" href="#start">Get started</a>
+        <a class="btn ghost" href="#modules">Browse the modules</a>
       </div>
     </div>
     <div class="term" aria-hidden="true">
@@ -180,18 +192,75 @@
     </div>
   </section>
 
-  <div class="setup" id="setup">
-    <div><div class="n">BEFORE YOU BEGIN</div></div>
-    <div>
-      <h3>Module 00 — Set up Docker (once)</h3>
-      <p>Install Docker Desktop, clone the repo, and run <span class="mono">./start.sh</span>. That's the
-        only prerequisite — every module below is independent and can be done in any order.</p>
-      <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
-        <span class="cmd mono">git clone github.com/michael-borck/assume-breach-labs</span>
-        <span class="cmd mono">cd assume-breach-labs &amp;&amp; ./start.sh</span>
+  <section class="start" id="start">
+    <div class="sec-h"><h2>Get started</h2><p>About 10 minutes — most of it Docker installing. Done once.</p></div>
+    <div class="steps">
+
+      <div class="step">
+        <div class="sn">1</div>
+        <div>
+          <h3>Install Docker Desktop</h3>
+          <p>Free, one-time, and the only software you need.
+            <a href="https://www.docker.com/products/docker-desktop/" target="_blank" rel="noopener">Download for your system ↗</a>,
+            install it, and start it — wait until it shows “running”.</p>
+        </div>
       </div>
+
+      <div class="step">
+        <div class="sn">2</div>
+        <div>
+          <h3>Download the labs — no git needed</h3>
+          <p><a class="ziplink" href="https://github.com/michael-borck/assume-breach-labs/archive/refs/heads/main.zip">⭳ Download the ZIP</a>,
+            then unzip it. You'll get a folder named <span class="mono">assume-breach-labs-main</span> —
+            put it somewhere easy, like your Desktop.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="sn">3</div>
+        <div>
+          <h3>Launch it</h3>
+          <div class="ostabs" role="tablist" aria-label="Choose your operating system">
+            <button role="tab" type="button" data-os="mac">macOS</button>
+            <button role="tab" type="button" data-os="win">Windows</button>
+            <button role="tab" type="button" data-os="linux">Linux</button>
+          </div>
+
+          <div class="ospane" data-os="mac">
+            <ol>
+              <li>Open the folder and double-click <span class="mono">start.command</span>.
+                <div class="tip">First time only: if macOS blocks it, right-click the file → <b>Open</b> → <b>Open</b>.</div></li>
+              <li>A Terminal window opens, the machines boot, and you land at the <span class="mono">lab&gt;</span>
+                prompt. Pick a module (see the cards below) and follow it.</li>
+            </ol>
+            <p class="tip">Prefer the terminal? Open <b>Terminal</b>, type <span class="cmd">cd </span> (with a
+              trailing space), drag the folder onto the window, press Enter, then run <span class="cmd">./start.sh</span></p>
+          </div>
+
+          <div class="ospane" data-os="win">
+            <ol>
+              <li>Docker Desktop installs <b>WSL2</b> — a built-in Ubuntu Linux. Open <b>Ubuntu</b> from the Start menu.</li>
+              <li>Go to your folder and launch it. For a folder on your Desktop:
+                <div><span class="cmd">cd /mnt/c/Users/YOUR-NAME/Desktop/assume-breach-labs-main</span></div>
+                <div><span class="cmd">./start.sh</span></div></li>
+            </ol>
+            <p class="tip">Simpler alternative: install
+              <a href="https://git-scm.com/download/win" target="_blank" rel="noopener">Git for Windows</a>,
+              then just double-click <span class="mono">start.bat</span> in the folder.</p>
+          </div>
+
+          <div class="ospane" data-os="linux">
+            <ol>
+              <li>Open a terminal in the folder — in most file managers, right-click → <b>Open Terminal Here</b>.</li>
+              <li>Run <span class="cmd">./start.sh</span> and pick a module.</li>
+            </ol>
+            <p class="tip">Or from any terminal: <span class="cmd">cd path/to/assume-breach-labs-main &amp;&amp; ./start.sh</span></p>
+          </div>
+        </div>
+      </div>
+
     </div>
-  </div>
+  </section>
 
   <div id="modules" class="sec-h">
     <h2>The nine modules</h2>
@@ -332,6 +401,20 @@
   }
   overlay.addEventListener("click", e => { if(e.target === overlay) closeModal(); });
   document.addEventListener("keydown", e => { if(e.key === "Escape" && overlay.classList.contains("open")) closeModal(); });
+
+  // OS tabs in "Get started" — auto-detect, then let the student switch.
+  const ua = navigator.userAgent;
+  let os = "linux";
+  if (/Mac/i.test(ua) && !/iPhone|iPad|iPod/i.test(ua)) os = "mac";
+  else if (/Win/i.test(ua)) os = "win";
+  const osTabs = [...document.querySelectorAll(".ostabs button")];
+  const osPanes = [...document.querySelectorAll(".ospane")];
+  function selectOS(target){
+    osTabs.forEach(b => b.setAttribute("aria-selected", String(b.dataset.os === target)));
+    osPanes.forEach(p => p.classList.toggle("on", p.dataset.os === target));
+  }
+  osTabs.forEach(b => b.addEventListener("click", () => selectOS(b.dataset.os)));
+  selectOS(os);
 
   const btn = document.getElementById("themeBtn");
   btn.addEventListener("click", () => {
