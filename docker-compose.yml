@@ -105,6 +105,22 @@ services:
     command: ["sleep", "infinity"]
 
   # ======================================================================
+  # Module 05 — Risk Management. Serves a single self-contained web page (an
+  # SLE/ARO/ALE calculator) to the student's browser at http://localhost:8055.
+  # Replaces the original Excel exercise. Browser-based, no CLI.
+  # ======================================================================
+  m05-web:
+    build:
+      context: ./modules/module-05-risk/web
+      dockerfile: Dockerfile
+    image: ghcr.io/michael-borck/assume-breach-riskcalc:latest
+    container_name: m05-web
+    hostname: riskcalc
+    profiles: ["module-05"]
+    ports:
+      - "8055:80"
+
+  # ======================================================================
   # Module 07 — Firewalls (replaces the Windows-only iNetworkSimulator with
   # real iptables/nftables across two routed networks).
   #

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Risk Calculator — Assume Breach Labs</title>
+<style>
+  :root {
+    --bg: #eef1f6; --surface: #ffffff; --surface-2: #f6f8fb;
+    --ink: #14202e; --muted: #5b6775; --line: #dde3ec;
+    --accent: #256b64; --accent-soft: #d7ebe8;
+    --good: #1c7a44; --good-soft: #dbf0e3;
+    --bad: #b23b32; --bad-soft: #f6dedb;
+    --shadow: 0 1px 2px rgba(20,32,46,.06), 0 8px 24px rgba(20,32,46,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e1520; --surface: #161f2c; --surface-2: #1b2634;
+      --ink: #e6ecf3; --muted: #93a1b1; --line: #27313f;
+      --accent: #52b3a8; --accent-soft: #123531;
+      --good: #4cc47e; --good-soft: #123626;
+      --bad: #f0796d; --bad-soft: #3a1e1b;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #eef1f6; --surface: #ffffff; --surface-2: #f6f8fb;
+    --ink: #14202e; --muted: #5b6775; --line: #dde3ec;
+    --accent: #256b64; --accent-soft: #d7ebe8;
+    --good: #1c7a44; --good-soft: #dbf0e3; --bad: #b23b32; --bad-soft: #f6dedb;
+    --shadow: 0 1px 2px rgba(20,32,46,.06), 0 8px 24px rgba(20,32,46,.06);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1520; --surface: #161f2c; --surface-2: #1b2634;
+    --ink: #e6ecf3; --muted: #93a1b1; --line: #27313f;
+    --accent: #52b3a8; --accent-soft: #123531;
+    --good: #4cc47e; --good-soft: #123626; --bad: #f0796d; --bad-soft: #3a1e1b;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 32px 20px 64px; }
+
+  header.top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .eyebrow { text-transform: uppercase; letter-spacing: .12em; font-size: 12px; font-weight: 700; color: var(--accent); margin: 0 0 6px; }
+  h1 { margin: 0; font-size: clamp(26px, 4vw, 34px); font-weight: 800; letter-spacing: -.02em; text-wrap: balance; }
+  .lede { color: var(--muted); margin: 10px 0 0; max-width: 62ch; }
+
+  .theme-btn {
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+    border-radius: 999px; padding: 8px 14px; font: inherit; font-size: 13px; cursor: pointer;
+  }
+  .theme-btn:hover { border-color: var(--accent); }
+  .theme-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 28px 0; }
+  @media (max-width: 720px) { .tiles { grid-template-columns: 1fr; } }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 16px; box-shadow: var(--shadow); }
+  .tile .label { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 700; }
+  .tile .value { font-size: 30px; font-weight: 800; margin-top: 6px; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+  .tile .note { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .tile.accent { border-left: 4px solid var(--accent); }
+  .tile.good  .value { color: var(--good); }
+
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; }
+  .panel h2 { margin: 0; padding: 18px 20px; font-size: 16px; border-bottom: 1px solid var(--line); }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; min-width: 720px; }
+  thead th { text-align: right; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; padding: 12px 14px; border-bottom: 1px solid var(--line); background: var(--surface-2); position: sticky; top: 0; }
+  thead th.l, tbody td.l { text-align: left; }
+  tbody td { padding: 8px 14px; border-bottom: 1px solid var(--line); text-align: right; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody td.threat { font-weight: 600; }
+  tbody td .sub { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
+
+  input[type="number"] {
+    width: 92px; text-align: right; font: inherit; font-variant-numeric: tabular-nums;
+    background: var(--surface-2); color: var(--ink); border: 1px solid var(--line);
+    border-radius: 8px; padding: 5px 8px;
+  }
+  input[type="number"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+  .ale { font-weight: 700; }
+
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .pill.good { background: var(--good-soft); color: var(--good); }
+  .pill.bad  { background: var(--bad-soft);  color: var(--bad); }
+
+  tfoot td { padding: 12px 14px; text-align: right; font-weight: 800; border-top: 2px solid var(--line); background: var(--surface-2); }
+  tfoot td.l { text-align: left; text-transform: uppercase; letter-spacing: .05em; font-size: 12px; color: var(--muted); }
+
+  .explain { margin-top: 28px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  @media (max-width: 720px) { .explain { grid-template-columns: 1fr; } }
+  .def { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .def h3 { margin: 0 0 6px; font-size: 14px; }
+  .def h3 span { color: var(--accent); font-weight: 800; }
+  .def p { margin: 0; font-size: 14px; color: var(--muted); }
+  .formula { font-family: ui-monospace, "SF Mono", Menlo, monospace; background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; color: var(--ink); }
+  footer { margin-top: 32px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">Assume Breach Labs · Module 05</p>
+      <h1>Quantitative Risk Calculator</h1>
+      <p class="lede">The security budget for XYZ Software Company. Edit the loss, frequency, and
+        control-cost figures for each threat and watch which safeguards actually pay for themselves.</p>
+    </div>
+    <button class="theme-btn" id="themeBtn" type="button" aria-label="Toggle light or dark theme">◐ Theme</button>
+  </header>
+
+  <section class="tiles" aria-label="Summary">
+    <div class="tile accent">
+      <div class="label">Total annual risk (ΣALE)</div>
+      <div class="value" id="sumAle">—</div>
+      <div class="note">Expected loss per year with no controls</div>
+    </div>
+    <div class="tile">
+      <div class="label">Recommended control spend</div>
+      <div class="value" id="sumSpend">—</div>
+      <div class="note">Cost of only the justified controls</div>
+    </div>
+    <div class="tile good">
+      <div class="label">Net annual saving</div>
+      <div class="value" id="sumSaving">—</div>
+      <div class="note">Risk avoided minus what you spend</div>
+    </div>
+  </section>
+
+  <div class="panel">
+    <h2>Threat register</h2>
+    <div class="scroll">
+      <table id="riskTable">
+        <thead>
+          <tr>
+            <th class="l">Threat</th>
+            <th>Loss / incident (SLE)</th>
+            <th>Times / year (ARO)</th>
+            <th>Annual loss (ALE)</th>
+            <th>Control cost / year</th>
+            <th class="l">Cost-justified?</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+        <tfoot>
+          <tr>
+            <td class="l">Totals</td>
+            <td></td>
+            <td></td>
+            <td id="footAle"></td>
+            <td id="footControl"></td>
+            <td class="l"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <section class="explain" aria-label="Definitions">
+    <div class="def">
+      <h3><span>SLE</span> — Single Loss Expectancy</h3>
+      <p>What one occurrence of the threat costs you.</p>
+    </div>
+    <div class="def">
+      <h3><span>ARO</span> — Annualised Rate of Occurrence</h3>
+      <p>How many times a year you expect it to happen. <span class="formula">0.1</span> means once a decade.</p>
+    </div>
+    <div class="def">
+      <h3><span>ALE</span> — Annualised Loss Expectancy</h3>
+      <p><span class="formula">ALE = SLE × ARO</span>. A control is worth buying only when it costs
+        less than the ALE it removes.</p>
+    </div>
+  </section>
+
+  <footer>
+    Change any figure to explore. A control is marked <strong>justified</strong> when its yearly cost
+    is less than the annual loss (ALE) it would prevent — the core cost–benefit test of risk management.
+  </footer>
+</div>
+
+<script>
+  // XYZ Software Company threat register. SLE = $/incident, ARO = times/year,
+  // control = $/year assumed to fully mitigate the threat.
+  const THREATS = [
+    { t: "Programmer mistakes",            sub: "bugs reaching production",   sle: 5000,   aro: 12,   ctl: 20000 },
+    { t: "Loss of intellectual property",  sub: "source / trade secrets",     sle: 75000,  aro: 0.5,  ctl: 15000 },
+    { t: "Software piracy",                sub: "unlicensed copies",          sle: 500,    aro: 6,    ctl: 30000 },
+    { t: "Theft of information (hacker)",  sub: "external breach",            sle: 2500,   aro: 4,    ctl: 15000 },
+    { t: "Theft of information (insider)", sub: "employee exfiltration",      sle: 5000,   aro: 2,    ctl: 15000 },
+    { t: "Web site defacement",            sub: "public embarrassment",       sle: 500,    aro: 4,    ctl: 10000 },
+    { t: "Theft of equipment",             sub: "laptops / servers",          sle: 5000,   aro: 1,    ctl: 5000 },
+    { t: "Viruses, worms, trojans",        sub: "malware infection",          sle: 1500,   aro: 8,    ctl: 15000 },
+    { t: "Denial-of-service attack",       sub: "site offline",               sle: 2500,   aro: 1,    ctl: 10000 },
+    { t: "Fire",                           sub: "data-centre loss",           sle: 500000, aro: 0.1,  ctl: 10000 },
+  ];
+
+  const fmt = n => "$" + Math.round(n).toLocaleString("en-US");
+  const rows = document.getElementById("rows");
+
+  function numCell(value, cls) {
+    const td = document.createElement("td");
+    const inp = document.createElement("input");
+    inp.type = "number"; inp.min = "0"; inp.step = "any"; inp.value = value; inp.className = cls;
+    td.appendChild(inp);
+    return { td, inp };
+  }
+
+  THREATS.forEach((row, i) => {
+    const tr = document.createElement("tr");
+
+    const name = document.createElement("td");
+    name.className = "l threat";
+    name.innerHTML = row.t + '<span class="sub">' + row.sub + "</span>";
+    tr.appendChild(name);
+
+    const sle = numCell(row.sle, "sle");
+    const aro = numCell(row.aro, "aro");
+    tr.appendChild(sle.td); tr.appendChild(aro.td);
+
+    const ale = document.createElement("td"); ale.className = "ale"; tr.appendChild(ale);
+
+    const ctl = numCell(row.ctl, "ctl");
+    tr.appendChild(ctl.td);
+
+    const verdict = document.createElement("td"); verdict.className = "l"; tr.appendChild(verdict);
+
+    tr.refs = { sle: sle.inp, aro: aro.inp, ctl: ctl.inp, ale, verdict };
+    [sle.inp, aro.inp, ctl.inp].forEach(el => el.addEventListener("input", recalc));
+    rows.appendChild(tr);
+  });
+
+  function recalc() {
+    let totalAle = 0, totalSpend = 0, totalSaving = 0;
+    for (const tr of rows.children) {
+      const { sle, aro, ctl, ale, verdict } = tr.refs;
+      const a = (parseFloat(sle.value) || 0) * (parseFloat(aro.value) || 0);
+      const c = parseFloat(ctl.value) || 0;
+      ale.textContent = fmt(a);
+      totalAle += a;
+      const justified = c < a;
+      verdict.innerHTML = justified
+        ? '<span class="pill good">Justified · saves ' + fmt(a - c) + '</span>'
+        : '<span class="pill bad">Not worth it · +' + fmt(c - a) + '</span>';
+      if (justified) { totalSpend += c; totalSaving += (a - c); }
+    }
+    document.getElementById("sumAle").textContent = fmt(totalAle);
+    document.getElementById("sumSpend").textContent = fmt(totalSpend);
+    document.getElementById("sumSaving").textContent = fmt(totalSaving);
+    document.getElementById("footAle").textContent = fmt(totalAle);
+    document.getElementById("footControl").textContent = fmt(totalSpend);
+  }
+  recalc();
+
+  // Theme toggle: stamp data-theme, overriding the OS media query.
+  const btn = document.getElementById("themeBtn");
+  btn.addEventListener("click", () => {
+    const cur = document.documentElement.getAttribute("data-theme");
+    const next = cur === "dark" ? "light"
+      : cur === "light" ? "dark"
+      : (matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "dark");
+    document.documentElement.setAttribute("data-theme", next);
+  });
+</script>
+</body>
+</html>

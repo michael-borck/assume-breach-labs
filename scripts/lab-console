@@ -112,6 +112,17 @@ EOF
     printf "${NC}\n"
 }
 
+# Open a URL in the host's browser (for browser-based modules that set BROWSER_URL)
+open_browser() {
+    local url="${BROWSER_URL:-}"
+    [ -n "$url" ] || { printf "${C_ERR}This module has no browser page.${NC}\n"; return; }
+    printf "${C_OK}Opening %s${NC}\n" "$url"
+    if command -v open >/dev/null 2>&1; then open "$url" >/dev/null 2>&1
+    elif command -v xdg-open >/dev/null 2>&1; then xdg-open "$url" >/dev/null 2>&1
+    elif command -v explorer.exe >/dev/null 2>&1; then explorer.exe "$url" >/dev/null 2>&1
+    else printf "${C_WARN}Couldn't auto-open. Paste this into your browser:${NC} %s\n" "$url"; fi
+}
+
 do_connect() {
     local host="${1:-}"
     if ! printf " %s " "$HOSTS" | grep -q " $host "; then
@@ -126,7 +137,8 @@ show_help() {
     module_help
     cat <<EOF
 
-  Always available:
+  Always available:${BROWSER_URL:+
+    ${C_PROMPT}open${NC}             open this lab's page in your browser}
     ${C_PROMPT}connect <host>${NC}   open a shell on a machine (${HOSTS})
     ${C_PROMPT}map${NC}              show the setup diagram
     ${C_PROMPT}hosts${NC}            list the machines
@@ -150,6 +162,10 @@ teardown_prompt() {
 repl() {
     printf "\n${C_OK}Welcome%s.${NC} You are logged in.\n" "${ANALYST:+, $ANALYST}"
     topology
+    if [ -n "${BROWSER_URL:-}" ]; then
+        printf "\n${C_OK}This lab runs in your web browser.${NC}\n"
+        printf "  Type ${C_PROMPT}open${NC} to launch it, or go to: ${C_TITLE}%s${NC}\n" "$BROWSER_URL"
+    fi
     printf "\nType ${C_PROMPT}help${NC} for commands.\n\n"
     while true; do
         printf "${C_PROMPT}lab>${NC} "
@@ -159,6 +175,8 @@ repl() {
         local cmd="${1:-}"; [ $# -gt 0 ] && shift || true
         case "$cmd" in
             "")        : ;;
+            open)      open_browser ;;
+            url)       printf "  %s\n" "${BROWSER_URL:-<none>}" ;;
             connect|ssh) do_connect "${1:-}" ;;
             map)       topology ;;
             hosts)     printf "  %s\n" "$HOSTS" ;;

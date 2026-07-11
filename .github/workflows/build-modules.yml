@@ -15,6 +15,7 @@ on:
       - modules/module-03-password-attacks/**
       - modules/module-02-port-scanning/**
       - modules/module-04-cryptography/**
+      - modules/module-05-risk/**
       - .github/workflows/build-modules.yml
   workflow_dispatch:
 
@@ -40,6 +41,9 @@ jobs:
           - name: assume-breach-crypto
             context: modules/module-04-cryptography/station
             file: modules/module-04-cryptography/station/Dockerfile
+          - name: assume-breach-riskcalc
+            context: modules/module-05-risk/web
+            file: modules/module-05-risk/web/Dockerfile
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
