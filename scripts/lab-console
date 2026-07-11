@@ -116,6 +116,10 @@ EOF
 open_browser() {
     local url="${BROWSER_URL:-}"
     [ -n "$url" ] || { printf "${C_ERR}This module has no browser page.${NC}\n"; return; }
+    if [ "${CODESPACES:-}" = "true" ]; then
+        printf "${C_OK}Open this forwarded link in your browser (Ctrl/Cmd-click it):${NC}\n  %s\n" "$url"
+        return
+    fi
     printf "${C_OK}Opening %s${NC}\n" "$url"
     if command -v open >/dev/null 2>&1; then open "$url" >/dev/null 2>&1
     elif command -v xdg-open >/dev/null 2>&1; then xdg-open "$url" >/dev/null 2>&1
@@ -202,6 +206,14 @@ fi
 . "$DESC"
 GUIDE_PATH="$(dirname "$DESC")/LAB-GUIDE.md"
 GUIDE_PATH="${GUIDE_PATH#"$PROJECT_ROOT"/}"
+
+# In GitHub Codespaces, the browser can't reach localhost — ports are forwarded to
+# <codespace>-<port>.<domain>. Rewrite a module's BROWSER_URL to that forwarded URL.
+# No effect locally (guarded by $CODESPACES).
+if [ "${CODESPACES:-}" = "true" ] && [ -n "${BROWSER_URL:-}" ]; then
+    _port=$(printf '%s' "$BROWSER_URL" | sed -E 's#.*:([0-9]+).*#\1#')
+    BROWSER_URL="https://${CODESPACE_NAME}-${_port}.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:-app.github.dev}"
+fi
 
 banner
 need_docker

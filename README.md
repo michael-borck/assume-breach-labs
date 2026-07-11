@@ -29,18 +29,6 @@ with plain commands like `ping pc2 pc1` and `rules load`. No `docker` typing. Fo
 > `LAB_MODULE=07 ./start.sh`. Instructors can also use the Makefile directly (`make m07`,
 > `make status`, `make help`).
 
-## Run it online (no install)
-
-Can't install Docker Desktop, or on a locked-down or Apple-Silicon machine? Run the labs in your
-browser with **GitHub Codespaces** — no local install, and the same `./start.sh` console:
-
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/michael-borck/assume-breach-labs)
-
-Click the badge (or **Code ▸ Codespaces ▸ Create codespace**), wait for it to build, then run
-`./start.sh` in the terminal as usual. Web tools (for example Wireshark-in-browser) open through
-the port Codespaces forwards for you. GitHub's free tier includes Codespaces hours; verify with
-[GitHub Education](https://education.github.com) for more.
-
 ## Modules
 
 | Module | Topic | Runs | Guide |
@@ -98,6 +86,26 @@ including from an external/exFAT drive. Two approaches carry lab data:
 > **Developing on an external/exFAT drive (macOS)?** Docker Desktop's file-sharing can't bind-mount
 > such paths and BuildKit trips on macOS `._*` sidecar files. This only affects *building here* — not
 > students, who pull prebuilt images. Use `DOCKER_BUILDKIT=0` for local builds if one fails.
+
+## Running where you can't install Docker
+
+Most people run the labs locally (see above). For locked-down lab PCs, Chromebooks, or anywhere Docker
+Desktop can't be installed, there are two online routes — in order of preference:
+
+1. **A managed Linux + Docker desktop (recommended).** If your institution offers a Docker-capable
+   Linux VM through a remote-desktop / VDI service, run the labs there exactly as you would locally —
+   download the ZIP and run `./start.sh`. No personal accounts, IT-supported. Ask your unit coordinator
+   whether this is available.
+
+2. **GitHub Codespaces (personal fallback).** Opens the repo in a cloud VS Code in your browser and
+   runs the same `./start.sh`, nothing installed on your machine. Open the repo on GitHub →
+   **Code ▸ Codespaces ▸ Create codespace**, then run `./start.sh`. Know the trade-offs:
+   - Needs a **GitHub account** (more free hours via [GitHub Education](https://education.github.com)).
+   - You work inside VS Code in the browser, not the clean console front door.
+   - The browser modules (5, 6, 9) open via a **forwarded URL** Codespaces provides, not `localhost` —
+     the console detects Codespaces and prints the right link.
+   - **Module 9's broken-certificate sites only work locally** — the Codespaces proxy presents its own
+     valid certificate, which masks the broken ones the exercise relies on. The quiz half works online.
 
 ## Licence
 

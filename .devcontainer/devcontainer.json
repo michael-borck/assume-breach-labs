@@ -4,9 +4,14 @@
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
-  "postCreateCommand": "chmod +x start.sh scripts/lab-console 2>/dev/null || true; docker --version",
+  "postCreateCommand": "docker --version",
+  "forwardPorts": [8055, 3006, 8090, 8443, 8444, 8445],
   "portsAttributes": {
-    "6080": { "label": "Web GUI (noVNC)", "onAutoForward": "openPreview" },
-    "8080": { "label": "Web tool", "onAutoForward": "silent" }
+    "8055": { "label": "Module 5 — Risk calculator", "onAutoForward": "silent" },
+    "3006": { "label": "Module 6 — Wireshark", "onAutoForward": "silent" },
+    "8090": { "label": "Module 9 — Awareness quiz", "onAutoForward": "silent" },
+    "8443": { "label": "Module 9 — Broken cert (expired)", "onAutoForward": "silent" },
+    "8444": { "label": "Module 9 — Broken cert (self-signed)", "onAutoForward": "silent" },
+    "8445": { "label": "Module 9 — Broken cert (wrong host)", "onAutoForward": "silent" }
   }
 }
