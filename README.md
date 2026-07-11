@@ -29,6 +29,18 @@ with plain commands like `ping pc2 pc1` and `rules load`. No `docker` typing. Fo
 > `LAB_MODULE=07 ./start.sh`. Instructors can also use the Makefile directly (`make m07`,
 > `make status`, `make help`).
 
+## Run it online (no install)
+
+Can't install Docker Desktop, or on a locked-down or Apple-Silicon machine? Run the labs in your
+browser with **GitHub Codespaces** — no local install, and the same `./start.sh` console:
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/michael-borck/assume-breach-labs)
+
+Click the badge (or **Code ▸ Codespaces ▸ Create codespace**), wait for it to build, then run
+`./start.sh` in the terminal as usual. Web tools (for example Wireshark-in-browser) open through
+the port Codespaces forwards for you. GitHub's free tier includes Codespaces hours; verify with
+[GitHub Education](https://education.github.com) for more.
+
 ## Modules
 
 | Module | Topic | Runs | Guide |

@@ -1,0 +1,12 @@
+{
+  "name": "assume-breach-labs",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "postCreateCommand": "chmod +x start.sh scripts/lab-console 2>/dev/null || true; docker --version",
+  "portsAttributes": {
+    "6080": { "label": "Web GUI (noVNC)", "onAutoForward": "openPreview" },
+    "8080": { "label": "Web tool", "onAutoForward": "silent" }
+  }
+}
