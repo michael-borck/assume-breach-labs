@@ -9,6 +9,10 @@ security**.
 one small exception) no dependence on external websites. The practical companion to the
 *Assume Breach* book.
 
+> **Using an AI assistant?** Make it a thinking partner, not an autopilot — and never run a command you
+> can't explain. The series guide **[Learning with AI](https://github.com/michael-borck/security-labs/blob/main/LEARNING-WITH-AI.md)**
+> shows how, including how to repeat each lab until you don't need the assistant at all.
+
 > **Unit-agnostic by design.** Modules are numbered by topic, not by any unit code. See
 > [`SCHEDULE.md`](SCHEDULE.md) to map modules onto a specific teaching week / workshop schedule.
 
