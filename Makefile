@@ -31,11 +31,13 @@ netmaps:
 # --- Module runners -------------------------------------------------------
 # Each starts exactly one module's profile from the single docker-compose.yml.
 
-# Build first, then up (no --build): several services can share one image tag,
-# and the legacy builder races if it builds them in parallel during `up --build`.
+# Pull the published images first (all images are public on GHCR); only fall
+# back to a local build if the pull fails. Then up (no --build): several services
+# can share one image tag, and the legacy builder races if it builds them in
+# parallel during `up --build`.
 define RUN_MODULE
 	@echo "==> Starting module $(1)"
-	$(COMPOSE) --profile module-$(1) build
+	$(COMPOSE) --profile module-$(1) pull || $(COMPOSE) --profile module-$(1) build
 	$(COMPOSE) --profile module-$(1) up -d
 	@echo "==> Up. See modules/module-$(1)-*/LAB-GUIDE.md  (or use ./start.sh)"
 endef

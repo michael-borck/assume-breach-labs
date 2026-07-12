@@ -82,11 +82,13 @@ bring_up() {
     if lab_is_up; then printf "${C_OK}Lab already running.${NC}\n"; return; fi
     printf "${C_DIM}Connecting to the lab...${NC}\n"; sleep 1
     printf "${C_DIM}Powering on the machines...${NC}\n"
-    # Build first (separate from up) to avoid the legacy builder racing when
-    # several services share one image tag; then start without --build.
+    # Pull the published images first (all images are public on GHCR); only fall
+    # back to a local build if the pull fails. Then start without --build to
+    # avoid the legacy builder racing when several services share one image tag.
     (
         cd "$PROJECT_ROOT"
-        docker compose --profile "module-${MODULE_NO}" build \
+        { docker compose --profile "module-${MODULE_NO}" pull \
+            || docker compose --profile "module-${MODULE_NO}" build; } \
             && docker compose --profile "module-${MODULE_NO}" up -d
     ) >"$LOGFILE" 2>&1 &
     local pid=$!
