@@ -26,6 +26,11 @@ Download the ZIP and unzip it — you'll get a folder called `assume-breach-labs
 
 **https://github.com/michael-borck/assume-breach-labs/archive/refs/heads/main.zip**
 
+> **Windows note:** "Extract All" puts the ZIP's contents inside a *new* folder named after the ZIP,
+> so you end up with `assume-breach-labs-main\assume-breach-labs-main\`. That's normal — the **inner**
+> folder (the one containing `start.bat`) is the one you want. Feel free to move it somewhere
+> convenient (e.g. your Desktop) and delete the empty outer folder.
+
 (If you do have git, `git clone https://github.com/michael-borck/assume-breach-labs.git` works too.)
 
 ## 3. Launch it
@@ -34,10 +39,12 @@ You start every lab the same way — the first run pulls the images it needs aut
 
 - **macOS:** double-click **`start.command`** in the folder. First time, if macOS blocks it, right-click
   it → **Open** → **Open**. (Or in Terminal: `cd` into the folder and run `./start.sh`.)
-- **Windows:** Docker Desktop installs **WSL2** (a built-in Ubuntu). Open **Ubuntu** from the Start
-  menu, `cd` to the folder — e.g. `cd /mnt/c/Users/YOU/Desktop/assume-breach-labs-main` — and run
-  `./start.sh`. *Alternative:* install [Git for Windows](https://git-scm.com/download/win) and
-  double-click **`start.bat`**.
+- **Windows:** one-time, install [Git for Windows](https://git-scm.com/download/win) — it's the
+  lab launcher (run the installer and click **Next** through every screen; the defaults are fine).
+  Then open the unzipped folder — the **inner** one, containing `start.bat` — and double-click
+  **`start.bat`**. If a window flashes open and vanishes: right-click an empty spot inside the
+  folder → **Open in Terminal**, type `.\start.bat` and press Enter to see the message (it usually
+  says Docker Desktop isn't running yet).
 - **Linux:** open a terminal in the folder and run `./start.sh`.
 
 > Double-clicking `start.sh` itself does **not** work (the file browser opens it in a text editor).

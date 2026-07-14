@@ -35,7 +35,7 @@ From the repo folder, run:
 ./start.sh
 ```
 
-(On Windows: double-click `start.bat`, or run `bash start.sh` in Git Bash.)
+(On Windows: install [Git for Windows](https://git-scm.com/download/win) once, then double-click `start.bat`.)
 
 You'll see a welcome banner, the machines will power on, and you'll land at a `lab>` prompt. Type
 `help` any time to see the commands. The ones you need:

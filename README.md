@@ -25,7 +25,7 @@ You don't need to know Docker. Install Docker Desktop (see
 ./start.sh
 ```
 
-(On Windows: double-click `start.bat`, or run `bash start.sh` in Git Bash.)
+(On Windows: install [Git for Windows](https://git-scm.com/download/win) once, then double-click `start.bat`.)
 
 That "logs you in" to an immersive lab console — the machines power on and you drive the whole lab
 with plain commands like `ping pc2 pc1` and `rules load`. No `docker` typing. Follow the module's
