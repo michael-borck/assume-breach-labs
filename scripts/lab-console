@@ -24,8 +24,15 @@ set -uo pipefail
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOGFILE="$(mktemp -t lab-console.XXXXXX)"
 
-C_TITLE='\033[1;36m'; C_OK='\033[0;32m'; C_WARN='\033[1;33m'
-C_ERR='\033[0;31m'; C_DIM='\033[0;90m'; C_PROMPT='\033[1;35m'; NC='\033[0m'
+# Real escape characters via $'...' so colours survive heredocs and plain echo
+# (a bare '\033' string only works inside printf format strings). No colours
+# when stdout isn't a terminal (piped output, CI).
+if [ -t 1 ]; then
+    C_TITLE=$'\033[1;36m'; C_OK=$'\033[0;32m'; C_WARN=$'\033[1;33m'
+    C_ERR=$'\033[0;31m'; C_DIM=$'\033[0;90m'; C_PROMPT=$'\033[1;35m'; NC=$'\033[0m'
+else
+    C_TITLE=''; C_OK=''; C_WARN=''; C_ERR=''; C_DIM=''; C_PROMPT=''; NC=''
+fi
 
 # --- core helpers available to modules ------------------------------------
 host_container() { echo "m${MODULE_NO}-$1"; }
@@ -141,10 +148,13 @@ do_connect() {
 
 show_help() {
     module_help
+    printf "\n  Always available:\n"
+    # macOS bash 3.2 can't parse a multi-line ${VAR:+...} inside a heredoc,
+    # so the optional line is a plain if instead.
+    if [ -n "${BROWSER_URL:-}" ]; then
+        printf "    %sopen%s             open this lab's page in your browser\n" "$C_PROMPT" "$NC"
+    fi
     cat <<EOF
-
-  Always available:${BROWSER_URL:+
-    ${C_PROMPT}open${NC}             open this lab's page in your browser}
     ${C_PROMPT}connect <host>${NC}   open a shell on a machine (${HOSTS})
     ${C_PROMPT}map${NC}              show the setup diagram
     ${C_PROMPT}hosts${NC}            list the machines
