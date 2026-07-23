@@ -1,0 +1,21 @@
+
+  +===================================================================+
+  |        A S S U M E   B R E A C H   —   S E C U R I T Y   L A B     |
+  |                                                                   |
+  |        Security Workstation                                       |
+  |        Module 01 · Access Control & Isolation                     |
+  +===================================================================+
+
+  You are logged in as root on 'station' — the office file server.
+
+  /office holds a CONFIDENTIAL salaries.csv and a public notice.txt.
+  Staff accounts:  rico    jane (HR)    carlos
+  Group:           hr   (empty — you decide who goes in it)
+
+  Mission: make sure ONLY the right people can read the salary file.
+           Least privilege — grant the minimum, never "readable by all".
+
+    >  type  labhelp   for the mission and the commands you'll need
+    >  everything here is real Linux — try things, break things,
+       and feel free to ask an AI assistant to explain any command
+

@@ -1,0 +1,35 @@
+#!/bin/sh
+# Module 01 — quick reference, shown by the `labhelp` command.
+cat <<'EOF'
+
+  MODULE 01 — Access Control & Isolation        (you are root@station)
+  -------------------------------------------------------------------
+
+  MISSION
+    Make /office/salaries.csv readable by HR (jane) — and by nobody else.
+    Theme: least privilege. Grant the minimum access needed, never more.
+
+  THE COMMANDS YOU'LL NEED  (real Linux — run them, inspect the output)
+
+    ls -l /office                     files + their permission strings
+    getfacl /office/salaries.csv      full permissions, including any ACLs
+
+    sudo -u rico cat /office/salaries.csv    try to read the file AS rico
+                                             (does it work? should it?)
+
+    chmod 640 /office/salaries.csv           change the permission bits
+    chown root:hr /office/salaries.csv       set owner:group
+    usermod -aG hr jane                      add jane to the hr group
+    id jane                                  check which groups jane is in
+
+    setfacl -m u:carlos:r /office/salaries.csv   grant ONE user via an ACL
+    setfacl -x u:carlos   /office/salaries.csv   remove that user's ACL
+
+  TIP
+    Changing a group membership only takes effect at the user's next login.
+    Here, just re-run the  sudo -u <user> ...  command to test again.
+
+  Full lab guide:  module-01-access-control/LAB-GUIDE.md (in the course files)
+  Type  labhelp  any time to see this again.  Type  exit  to leave the lab.
+
+EOF

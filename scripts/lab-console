@@ -146,6 +146,21 @@ do_connect() {
         || docker exec -it "$(host_container "$host")" sh
 }
 
+# Shell-mode modules (console.env sets SHELL_HOST): instead of the wrapped lab>
+# REPL, log the student straight into the workstation container as a real
+# interactive shell. They use the real Linux/security tools — which also means an
+# AI assistant can help them, because the commands and errors are genuine, not
+# invented lab verbs. The welcome banner + themed prompt come from the container
+# image (/etc/bash.bashrc), so it feels like logging into a dedicated security
+# workstation every time.
+enter_shell() {
+    local host="$1"
+    printf "${C_OK}Connection established.${NC} Logging in to the %s workstation...\n\n" "$host"
+    docker exec -it "$(host_container "$host")" bash 2>/dev/null \
+        || docker exec -it "$(host_container "$host")" sh
+    teardown_prompt
+}
+
 show_help() {
     module_help
     printf "\n  Always available:\n"
@@ -233,4 +248,8 @@ if [ -z "$ANALYST" ] && [ -t 0 ]; then
     read -r -p "Enter your name (for the lab session): " ANALYST
 fi
 bring_up
-repl
+if [ -n "${SHELL_HOST:-}" ]; then
+    enter_shell "$SHELL_HOST"
+else
+    repl
+fi

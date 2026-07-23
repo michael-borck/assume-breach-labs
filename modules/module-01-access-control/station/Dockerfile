@@ -7,7 +7,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         acl \
         util-linux \
         coreutils \
+        sudo \
     && rm -rf /var/lib/apt/lists/*
+
+# Security-workstation feel: a welcome banner (MOTD), a `labhelp` quick-reference
+# command, and a themed prompt shown on every interactive login. This is what
+# makes attaching to the container feel like logging into a dedicated machine
+# instead of a bare shell — see modules/module-01-access-control/console.env
+# (SHELL_HOST) and scripts/lab-console (enter_shell).
+COPY motd /etc/motd-lab
+COPY labhelp /usr/local/bin/labhelp
+COPY lab-bashrc /tmp/lab-bashrc
+RUN chmod +x /usr/local/bin/labhelp \
+    && cat /tmp/lab-bashrc >> /etc/bash.bashrc \
+    && rm /tmp/lab-bashrc
 
 # Three ordinary staff accounts. 'hr' group starts empty — the student populates it.
 RUN useradd -m -s /bin/bash rico \

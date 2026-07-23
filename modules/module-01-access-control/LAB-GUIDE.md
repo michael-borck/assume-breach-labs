@@ -21,26 +21,22 @@ minimum access needed, never more.
 ./start.sh
 ```
 
-Pick module `01`. At the `lab>` prompt (`help` for the list). The key command is **`read <user>
-<file>`** — it tries to open a file *as that user*, which is how you check whether your permissions
-actually work (the Linux version of "log out and log back in as rico").
+Pick module `01`. The workstation powers on and **logs you straight in as root** on the office
+server — a real Linux shell, in `/office`. Type **`labhelp`** any time for the mission and the
+commands you'll need.
 
-| Command | What it does |
-|---------|--------------|
-| `files` | list the office files and their permissions |
-| `read <user> <file>` | try to read a file **as** that user |
-| `perms <file>` | full permissions + any ACLs |
-| `chmod <mode> <file>` | change permissions |
-| `chown <owner[:group]> <file>` | change owner/group |
-| `addgroup <user> <group>` | add a user to a group |
-| `grant <user> <file>` / `revoke <user> <file>` | give/remove one user's access (ACL) |
+Everything below is a real Linux command. Run them, inspect the output, and — because these are the
+genuine tools, not lab shortcuts — feel free to ask an AI assistant to explain anything you don't
+recognise. (The one command worth knowing up front: **`sudo -u rico cat salaries.csv`** tries to open
+a file *as* that user, which is how you check whether your permissions actually work — the Linux
+equivalent of "log out and log back in as rico.")
 
 ---
 
 ## Phase 1: Reading permissions
 
-```
-lab> files
+```bash
+ls -l /office
 ```
 
 Look at `salaries.csv`. Its permission string is `-rw-------` (mode **600**).
@@ -51,8 +47,8 @@ Look at `salaries.csv`. Its permission string is `-rw-------` (mode **600**).
 
 Check your answer by trying to read it as rico:
 
-```
-lab> read rico salaries.csv
+```bash
+sudo -u rico cat salaries.csv
 ```
 
 > **Q2.** What happened, and why? (rico is not the owner, and "others" have no permissions.)
@@ -63,9 +59,9 @@ lab> read rico salaries.csv
 
 jane needs to read the salary file for HR. The quickest fix is to make it readable by everyone:
 
-```
-lab> chmod 644 salaries.csv
-lab> read rico salaries.csv
+```bash
+chmod 644 salaries.csv
+sudo -u rico cat salaries.csv
 ```
 
 > **Q3.** After `chmod 644`, can **rico** read the confidential file now? Was rico supposed to? Explain
@@ -81,21 +77,25 @@ the damage in the next phase.
 Give access to a *group* of the right people, not to everyone. Put the file in an `hr` group and let
 only that group read it:
 
-```
-lab> chown root:hr salaries.csv
-lab> chmod 640 salaries.csv
+```bash
+chown root:hr salaries.csv
+chmod 640 salaries.csv
 ```
 
-Now `640` means: owner can read/write, **the hr group can read**, others get nothing. Add jane to hr:
+Now `640` means: owner can read/write, **the hr group can read**, others get nothing. Add jane to hr,
+then test both jane and rico:
 
-```
-lab> addgroup jane hr
-lab> read jane salaries.csv
-lab> read rico salaries.csv
+```bash
+usermod -aG hr jane
+sudo -u jane cat salaries.csv
+sudo -u rico cat salaries.csv
 ```
 
 > **Q4.** Can jane read the file now? Can rico? Explain how jane got access **without** the file being
 > readable by everyone. This is **least privilege** — access limited to exactly who needs it.
+>
+> *(If jane's read is denied on the very first try: group membership only applies at her next login.
+> Re-running `sudo -u jane cat salaries.csv` starts a fresh session, which is why it then works.)*
 
 ---
 
@@ -104,21 +104,21 @@ lab> read rico salaries.csv
 Sometimes you need to grant just **one** extra person, and making a whole group is overkill. A
 **POSIX ACL** grants a single user directly:
 
-```
-lab> grant carlos salaries.csv
-lab> read carlos salaries.csv
-lab> perms salaries.csv
+```bash
+setfacl -m u:carlos:r salaries.csv
+sudo -u carlos cat salaries.csv
+getfacl salaries.csv
 ```
 
-> **Q5.** carlos can now read the file even though he's not in the hr group. In the `perms` output,
-> find the line that grants carlos access (`user:carlos:r--`). Also, `files` now shows a `+` after the
-> permissions — what does that `+` tell an administrator at a glance?
+> **Q5.** carlos can now read the file even though he's not in the hr group. In the `getfacl` output,
+> find the line that grants carlos access (`user:carlos:r--`). Also, `ls -l salaries.csv` now shows a
+> `+` after the permissions — what does that `+` tell an administrator at a glance?
 
 Remove it again when carlos no longer needs it:
 
-```
-lab> revoke carlos salaries.csv
-lab> read carlos salaries.csv
+```bash
+setfacl -x u:carlos salaries.csv
+sudo -u carlos cat salaries.csv
 ```
 
 > **Q6.** Least privilege isn't only about granting the minimum — it's also about **removing** access
@@ -141,30 +141,34 @@ access-control boundary: what runs inside it can't see the rest of your computer
 
 ## Wrapping up
 
-Type `quit` to leave (say `y` to shut the machine down). Your changes reset next time you start.
+Type `exit` to leave (say `y` to shut the machine down). Your changes reset next time you start.
 
 ### Passport prompts (submit these)
 
 Collect **Q1–Q7** into your lab journal, with:
 
 - What `-rw-r-----` means, broken down into owner/group/other.
-- The result of `read rico salaries.csv` before and after `chmod 644`, and why 644 was wrong.
+- The result of `sudo -u rico cat salaries.csv` before and after `chmod 644`, and why 644 was wrong.
 - How you gave jane access the *right* way, and proof rico still couldn't read it.
 - One sentence defining **least privilege** in your own words.
 
 ---
 
-## Under the hood
+## Command reference
 
-Every console command is a standard Linux command:
+Every command in this lab is a standard Linux tool you'll use on real systems:
 
-| Console | Real command |
-|---------|--------------|
-| `read jane salaries.csv` | `runuser -u jane -- cat /office/salaries.csv` |
-| `chmod 640 salaries.csv` | `chmod 640 /office/salaries.csv` |
-| `chown root:hr salaries.csv` | `chown root:hr /office/salaries.csv` |
-| `addgroup jane hr` | `usermod -aG hr jane` |
-| `grant carlos salaries.csv` | `setfacl -m u:carlos:r /office/salaries.csv` |
-| `perms salaries.csv` | `ls -l` + `getfacl` |
+| Task | Command |
+|------|---------|
+| List files with permissions | `ls -l /office` |
+| Show full permissions + ACLs | `getfacl salaries.csv` |
+| Read a file **as** another user | `sudo -u jane cat salaries.csv` |
+| Change permission bits | `chmod 640 salaries.csv` |
+| Change owner / group | `chown root:hr salaries.csv` |
+| Add a user to a group | `usermod -aG hr jane` |
+| Check a user's groups | `id jane` |
+| Grant one user access (ACL) | `setfacl -m u:carlos:r salaries.csv` |
+| Remove that ACL | `setfacl -x u:carlos salaries.csv` |
 
-After `connect station` you're root — run these yourself and inspect `/office`.
+You are root on `station`, working in `/office` — run these yourself, inspect the results, and don't
+be afraid to break things. Everything resets when you restart the lab.
