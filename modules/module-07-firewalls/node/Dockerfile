@@ -46,11 +46,12 @@ RUN ssh-keygen -A \
 COPY node/motd /etc/motd-lab
 COPY node/labhelp /usr/local/bin/labhelp
 COPY node/netmap /usr/local/bin/netmap
-COPY node/lab-bashrc /tmp/lab-bashrc
-RUN chmod 644 /etc/motd-lab \
+# Install for BOTH shell types: /etc/profile.d for ssh login shells (ssh pc2),
+# /etc/bash.bashrc for the docker-exec home shell (the firewall). The snippet is
+# $--guarded so one-off `ssh host cmd` stays clean (no banner spam).
+COPY node/lab-bashrc /etc/profile.d/00-lab-workstation.sh
+RUN chmod 644 /etc/motd-lab /etc/profile.d/00-lab-workstation.sh \
     && chmod 755 /usr/local/bin/labhelp /usr/local/bin/netmap \
-    && cat /tmp/lab-bashrc >> /etc/bash.bashrc \
-    && cat /tmp/lab-bashrc >> /root/.bashrc \
-    && rm /tmp/lab-bashrc
+    && cat /etc/profile.d/00-lab-workstation.sh >> /etc/bash.bashrc
 
 CMD ["sleep", "infinity"]
