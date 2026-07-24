@@ -1,0 +1,13 @@
+#!/bin/sh
+# `netmap` — redraw the Module 11 network diagram at any time.
+cat <<'EOF'
+
+     client 10.11.0.10  ──►  EAVESDROPPER  ──►  server 10.11.1.20
+       (office, you)          (on the path)       (login service :8080)
+                            10.11.0.254 / .1.254
+
+        Every packet between client and server crosses the eavesdropper —
+        like your data crossing the internet through networks you don't own.
+        A VPN wraps that traffic in an encrypted tunnel so it can't be read.
+
+EOF

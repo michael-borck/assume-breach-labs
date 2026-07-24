@@ -7,6 +7,8 @@ watching the network in between.
 
 You saw in Module 06 that anything sent in the clear can be read off the wire. This lab shows the fix:
 a VPN wraps your traffic in an encrypted tunnel, so the untrusted networks it crosses can't read it.
+You never type Docker — you log into the client and run the real tools (`curl`, `ssh`, `wg-quick`,
+`tcpdump`), so an AI assistant can help you read any output.
 
 ## Lab Scenario
 
@@ -17,7 +19,7 @@ is to see what that eavesdropper can read, first without a VPN and then with one
 
 ```
      client 10.11.0.10  ──►  EAVESDROPPER  ──►  server 10.11.1.20
-       (office)               (on the path)       (login service :8080)
+       (office, you)          (on the path)       (login service :8080)
 ```
 
 ## Getting in
@@ -26,24 +28,25 @@ is to see what that eavesdropper can read, first without a VPN and then with one
 ./start.sh
 ```
 
-Pick module `11`. At the `lab>` prompt (`help` for the list):
-
-| Command | What it does |
-|---------|--------------|
-| `eavesdrop` | the client logs in while the eavesdropper sniffs the wire |
-| `vpn on` / `vpn off` | bring the WireGuard tunnel up / down |
-| `status` | show whether the tunnel is up |
-| `connect <host>` | shell on client / server / eavesdropper |
+Pick module `11`. The machines power on and you're **logged in as root on the client**. Type
+**`labhelp`** for the commands and **`netmap`** to redraw the network any time. The eavesdropper is
+already capturing the wire to `/var/log/wire.log` — you'll read it with `ssh`.
 
 ---
 
 ## Phase 1: Without a VPN — the wire is readable
 
-The client logs into the server by sending its username and password. Watch what the eavesdropper
-sees:
+From the client, log into the server by sending a username and password (a normal cleartext HTTP
+request):
 
+```bash
+curl -s http://server:8080/login -d 'user=admin&password=Sup3rSecret!'
 ```
-lab> eavesdrop
+
+Now read what the eavesdropper caught off the wire:
+
+```bash
+ssh eavesdropper 'grep -a "password=" /var/log/wire.log'
 ```
 
 > **Q1.** What did the eavesdropper capture? Write down the exact line. Who, in the real world, is in
@@ -57,15 +60,16 @@ lab> eavesdrop
 
 ## Phase 2: Turn on the VPN
 
-Bring up the encrypted tunnel between the client and the server:
+Bring up the encrypted WireGuard tunnel — it needs both ends. On the client, then the server:
 
-```
-lab> vpn on
-lab> status
+```bash
+wg-quick up wg0
+ssh server 'wg-quick up wg0'
+wg show
 ```
 
-`status` shows the live WireGuard tunnel — a handshake, and an encrypted link between `10.99.0.2`
-(client) and `10.99.0.1` (server).
+`wg show` displays the live tunnel — a handshake, and an encrypted link between `10.99.0.2` (client)
+and `10.99.0.1` (server).
 
 > **Q3.** The tunnel gives each machine a new address on a private `10.99.0.0/24` network that only
 > exists inside the encryption. In plain terms, what is a VPN doing here — what does "tunnel" mean?
@@ -74,14 +78,19 @@ lab> status
 
 ## Phase 3: With the VPN — the wire goes dark
 
-Now the client sends the very same login, but through the tunnel. Watch the eavesdropper again:
+Send the very same login, but this time to the server's **tunnel address** (`10.99.0.1`), so it
+travels inside the encrypted tunnel. First clear the eavesdropper's old capture so the comparison is
+clean, then send and re-read the wire:
 
-```
-lab> eavesdrop
+```bash
+ssh eavesdropper ': > /var/log/wire.log'
+curl -s http://10.99.0.1:8080/login -d 'user=admin&password=Sup3rSecret!'
+ssh eavesdropper 'grep -a "password=" /var/log/wire.log'      # -> nothing this time
+ssh eavesdropper 'grep -c 51820 /var/log/wire.log'            # -> encrypted WireGuard packets
 ```
 
 > **Q4.** Can the eavesdropper read the password now? What *does* it see instead? (Look at the
-> protocol and port it reports.)
+> protocol and port — UDP 51820 is WireGuard.)
 
 > **Q5.** The eavesdropper is still on the path and still sees traffic — the packets didn't disappear.
 > So what exactly did the VPN change? Why can't the eavesdropper read the contents even though it
@@ -94,9 +103,12 @@ lab> eavesdrop
 
 ## Phase 4: Off again (optional)
 
-```
-lab> vpn off
-lab> eavesdrop
+```bash
+wg-quick down wg0
+ssh server 'wg-quick down wg0'
+ssh eavesdropper ': > /var/log/wire.log'
+curl -s http://server:8080/login -d 'user=admin&password=Sup3rSecret!'
+ssh eavesdropper 'grep -a "password=" /var/log/wire.log'
 ```
 
 Confirm the password is readable again the moment the tunnel is down — the protection only lasts as
@@ -109,7 +121,7 @@ long as the tunnel is up.
 
 ## Wrapping up
 
-Type `quit` to leave (say `y` to shut the machines down).
+Type `exit` on the client to leave (say `y` to shut the machines down). Your changes reset next time.
 
 ### Passport prompts (submit these)
 
@@ -121,10 +133,24 @@ Collect **Q1–Q7** into your lab journal, with:
 
 ---
 
-## Under the hood
+## Command reference
 
-- The tunnel is real **WireGuard** — the same VPN used in production. `vpn on` runs `wg-quick up wg0`
-  on the client and server; `status` runs `wg show`.
-- Without the VPN the client reaches the server directly (`10.11.1.20:8080`); with it up, it uses the
-  tunnel address (`10.99.0.1`), so the packets on the wire are encrypted WireGuard UDP (port 51820).
-- After `connect eavesdropper`, run `tcpdump -A -i any` yourself and watch the traffic live.
+Everything is real tools on real machines. You work from the **client** and `ssh` to the others.
+
+| Where | Task | Command |
+|-------|------|---------|
+| client | Send a login in the clear | `curl -s http://server:8080/login -d 'user=admin&password=Sup3rSecret!'` |
+| client | Read what the wire caught | `ssh eavesdropper 'grep -a "password=" /var/log/wire.log'` |
+| client | Bring the tunnel up (this end) | `wg-quick up wg0` |
+| client | Bring the tunnel up (server end) | `ssh server 'wg-quick up wg0'` |
+| client | Show the tunnel state | `wg show` |
+| client | Send a login through the tunnel | `curl -s http://10.99.0.1:8080/login -d 'user=admin&password=Sup3rSecret!'` |
+| client | Clear the eavesdropper's capture | `ssh eavesdropper ': > /var/log/wire.log'` |
+| client | Tear the tunnel down | `wg-quick down wg0` (and `ssh server 'wg-quick down wg0'`) |
+
+- The tunnel is real **WireGuard** — the same VPN used in production. The client and server configs
+  (`/etc/wireguard/wg0.conf`) are provided; you bring the tunnel up with `wg-quick`.
+- Without the VPN the client reaches the server directly (`server:8080` = `10.11.1.20`); with it up,
+  it uses the tunnel address (`10.99.0.1`), so the packets on the wire are encrypted WireGuard UDP
+  (port 51820).
+- On the eavesdropper you can also watch live: `ssh eavesdropper` then `tcpdump -A -nn -i any`.

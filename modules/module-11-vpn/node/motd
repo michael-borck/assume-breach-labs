@@ -1,0 +1,22 @@
+
+  +===================================================================+
+  |        A S S U M E   B R E A C H   —   S E C U R I T Y   L A B     |
+  |                                                                   |
+  |        Secure Communications Lab                                  |
+  |        Module 11 · VPN & Tunnelling                               |
+  +===================================================================+
+
+  THE NETWORK   (type  netmap  to redraw this any time)
+
+     client 10.11.0.10  ──►  EAVESDROPPER  ──►  server 10.11.1.20
+       (office, you)          (on the path)       (login service :8080)
+
+        Every packet you send to the server crosses the eavesdropper — the
+        untrusted infrastructure your traffic crosses in the real world.
+
+  You are on the CLIENT. Send a login to the server, see what the eavesdropper
+  reads off the wire, then bring up a WireGuard VPN and watch the wire go dark.
+
+    >  type  labhelp   for the commands (send, read the wire, bring up the VPN)
+    >  real WireGuard + ssh + tcpdump on real machines — ask an AI for help
+

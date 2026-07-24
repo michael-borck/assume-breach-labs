@@ -1,0 +1,38 @@
+#!/bin/sh
+# Module 11 — quick reference, shown by the `labhelp` command. Host-aware.
+HN="$(hostname)"
+cat <<EOF
+
+  MODULE 11 — VPN & Tunnelling                   (you are on: $HN)
+  ------------------------------------------------------------------
+
+  MISSION
+    Your login to the server crosses an untrusted eavesdropper. See it read
+    your password in the clear, then bring up a WireGuard VPN and confirm the
+    eavesdropper can no longer read it.
+
+  1. SEND A LOGIN (in the clear) from the client:
+       curl -s http://server:8080/login -d 'user=admin&password=Sup3rSecret!'
+
+  2. SEE WHAT THE EAVESDROPPER CAUGHT off the wire:
+       ssh eavesdropper 'grep -a "password=" /var/log/wire.log'
+       -> your password, in the clear
+
+  3. BRING UP THE VPN (WireGuard) — both ends:
+       wg-quick up wg0                  (here on the client)
+       ssh server 'wg-quick up wg0'     (the server end)
+       wg show                          (see the tunnel + handshake)
+
+  4. SEND THE LOGIN THROUGH THE TUNNEL, then re-check the wire:
+       ssh eavesdropper ': > /var/log/wire.log'      (clear the old capture)
+       curl -s http://10.99.0.1:8080/login -d 'user=admin&password=Sup3rSecret!'
+       ssh eavesdropper 'grep -a "password=" /var/log/wire.log'   -> nothing
+       ssh eavesdropper 'grep -c 51820 /var/log/wire.log'         -> encrypted UDP only
+
+  5. TEAR IT DOWN (optional):
+       wg-quick down wg0    and    ssh server 'wg-quick down wg0'
+
+  Type  netmap  for the network diagram.
+  Full guide:  module-11-vpn/LAB-GUIDE.md          Type  exit  to leave.
+
+EOF
