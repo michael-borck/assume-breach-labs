@@ -1,0 +1,23 @@
+
+  +===================================================================+
+  |        A S S U M E   B R E A C H   —   S E C U R I T Y   L A B     |
+  |                                                                   |
+  |        Penetration Testing Workstation                            |
+  |        Module 03 · Password Attacks                               |
+  +===================================================================+
+
+  You are logged in as analyst on 'station' — a cracking workstation.
+
+  You've pulled leaked password hashes and an encrypted archive off a
+  compromised system. Working in ~/lab:
+    hashes/     easy-md5.txt   medium-sha256.txt   windows-ntlm.txt
+    wordlists/  common-passwords.txt
+    secret.zip  (a password-protected archive)
+
+  Mission: as an authorised tester, find how many of these passwords are
+           weak enough to crack — then reason about why that matters.
+
+    >  type  labhelp   for the mission and the commands you'll need
+    >  everything here is real Linux — try things, break things,
+       and feel free to ask an AI assistant to explain any command
+

@@ -3,20 +3,18 @@
 **What this replaces:** the old Windows-only lab that used L0phtcrack, L517, and fcrackzip inside
 the XP VM, plus web hash tools.
 **What you actually use:** the real tools professionals use — **John the Ripper** (hash cracking)
-and **fcrackzip** (archive cracking) — on a real Linux workstation.
+and **fcrackzip** (archive cracking) — on a real Linux workstation, run by hand.
 
-You drive everything from the lab console. You will *not* type Docker commands: you log in, then use
-plain commands like `crack easy` and `crackzip`. Each command shows the real tool it runs (e.g.
-`[station] $ john --format=raw-md5 ...`) so you still learn the real thing — see
-[Under the hood](#under-the-hood-the-real-commands).
+You are an authorised penetration tester at a real cracking workstation. You log straight into its
+shell and run the genuine tools yourself — no lab shortcuts, no wrapper prompts.
 
 ## Lab Scenario
 
 You've obtained a set of leaked password **hashes** and a **password-protected archive** from a
-compromised system. Your task, as an authorised tester, is to find out how many of the passwords are
-weak enough to crack — and to understand *why* some fall in milliseconds and others would take
-centuries. The lesson is defensive: if you can crack it this easily, so can an attacker, so these are
-the passwords your policy must forbid.
+compromised system. Your task is to find out how many of the passwords are weak enough to crack —
+and to understand *why* some fall in milliseconds and others would take centuries. The lesson is
+defensive: if you can crack it this easily, so can an attacker, so these are the passwords your
+policy must forbid.
 
 ## Getting in
 
@@ -24,38 +22,40 @@ the passwords your policy must forbid.
 ./start.sh
 ```
 
-Pick module `03` if prompted. You'll land at a `lab>` prompt. Type `help` any time. The commands:
+Pick module `03` if prompted. The workstation powers on and **logs you straight in** as the
+`analyst` user on `station` — a real Linux shell, in `~/lab`. Type **`labhelp`** any time for the
+mission and the exact commands you'll need.
 
-| Command | What it does |
-|---------|--------------|
-| `hashes` | Show the hash files you'll attack |
-| `identify <hash>` | Guess a hash's type from its shape |
-| `crack easy` | Crack the MD5 hashes with a wordlist |
-| `crack sha` | Crack the SHA-256 hashes |
-| `crack windows` | Crack the Windows NTLM hashes |
-| `crackzip` | Dictionary-attack the password-protected zip |
-| `openzip <password>` | Open the zip once you've cracked its password |
-| `connect station` | Drop into the workstation shell to run tools yourself |
+Everything below is a real Linux command. Run them, inspect the output, and — because these are the
+genuine tools, not lab shortcuts — feel free to ask an AI assistant to explain anything you don't
+recognise. Take a look at what you've been handed first:
+
+```bash
+ls hashes wordlists
+cat hashes/easy-md5.txt
+```
 
 ---
 
 ## Phase 1: What kind of hash is this?
 
-Before cracking, you need to know what you're looking at. Look at the hashes:
+Before cracking, you need to know what you're looking at. Look at the three hash files — MD5
+(32 hex characters), SHA-256 (64), and Windows NTLM (in `pwdump` format):
 
-```
-lab> hashes
+```bash
+cat hashes/easy-md5.txt
+cat hashes/medium-sha256.txt
+cat hashes/windows-ntlm.txt
 ```
 
-You'll see three files: MD5 (32 hex characters), SHA-256 (64), and Windows NTLM (in `pwdump`
-format). Try identifying one:
+Now identify one by its shape (`identify-hash` is a small teaching script on the workstation):
 
-```
-lab> identify 5f4dcc3b5aa765d61d8327deb882cf99
+```bash
+identify-hash 5f4dcc3b5aa765d61d8327deb882cf99
 ```
 
 > **Q1.** How does a tool guess a hash's *type* without knowing the password? What property of the
-> hash gives it away? (Hint: look at the lengths of the three hash files.)
+> hash gives it away? (Hint: compare the lengths of the three hash files.)
 
 > **Q2.** The identifier says a 32-character hex string could be **MD5 or NTLM**. Why can't length
 > alone tell them apart, and what extra information would you need?
@@ -64,23 +64,33 @@ lab> identify 5f4dcc3b5aa765d61d8327deb882cf99
 
 ## Phase 2: Cracking with a wordlist (dictionary attack)
 
-A **dictionary attack** tries a list of likely passwords and hashes each one, looking for a match. It
+A **dictionary attack** tries a list of likely passwords, hashes each one, and looks for a match. It
 only finds passwords that are *in the list* — but weak passwords almost always are.
 
-```
-lab> crack easy
+John the Ripper needs to be told which hash algorithm it's attacking, with `--format`. Start with the
+MD5 set:
+
+```bash
+john --format=raw-md5 --wordlist=wordlists/common-passwords.txt hashes/easy-md5.txt
 ```
 
-John hashes each word in the wordlist and compares. Watch it find the weak ones instantly.
+John hashes each word in the wordlist and compares. Watch it find the weak ones instantly. To
+re-print what it cracked (John caches results, so a second run says "No password hashes left to
+crack" — use `--show` instead):
+
+```bash
+john --format=raw-md5 --show hashes/easy-md5.txt
+```
 
 > **Q3.** How many of the MD5 hashes cracked, and what were the passwords? Roughly how long did it
 > take?
 
-Now the other two sets:
+Now the other two sets — same tool, different `--format`:
 
-```
-lab> crack sha
-lab> crack windows
+```bash
+john --format=raw-sha256 --wordlist=wordlists/common-passwords.txt hashes/medium-sha256.txt
+john --format=NT         --wordlist=wordlists/common-passwords.txt hashes/windows-ntlm.txt
+john --format=NT --show hashes/windows-ntlm.txt
 ```
 
 > **Q4.** The Windows NTLM crack shows a **username** next to each password (e.g.
@@ -114,18 +124,29 @@ Fill in this table (a calculator is fine):
 
 ## Phase 4: Cracking a password-protected archive
 
-Files can be encrypted with a password too — and the same dictionary attack applies.
+Files can be encrypted with a password too — and the same dictionary attack applies. `fcrackzip`
+tries each word in the list against the archive (`-D` = dictionary mode, `-p` = wordlist). It prints
+the match as `possible pw found: <word>`:
 
-```
-lab> crackzip
+```bash
+fcrackzip -D -p wordlists/common-passwords.txt secret.zip
 ```
 
-fcrackzip tries each word in the list against the archive.
+You can also crack the archive with **John** — exactly the tool you used on the hashes. `zip2john`
+turns the encrypted archive into a hash line, and John cracks it:
+
+```bash
+zip2john secret.zip > secret.hash
+john --wordlist=wordlists/common-passwords.txt secret.hash
+john --show secret.hash
+```
 
 > **Q7.** What password protected the archive? Once you have it, open the file and read what's
-> inside:
-> ```
-> lab> openzip <the-password-you-found>
+> inside. (`unzip` isn't installed on this box, so use Python's built-in `zipfile` to extract —
+> replace `PASSWORD` with the word you found):
+> ```bash
+> python3 -c 'import zipfile; zipfile.ZipFile("secret.zip").extractall(pwd=b"PASSWORD")'
+> cat flag.txt
 > ```
 > Record the flag from `flag.txt`.
 
@@ -133,7 +154,7 @@ fcrackzip tries each word in the list against the archive.
 
 ## Wrapping up
 
-Type `quit` to leave (say `y` to shut the machine down).
+Type `exit` to leave (say `y` to shut the machine down). Your changes reset next time you start.
 
 ### Passport prompts (submit these)
 
@@ -147,20 +168,25 @@ Collect **Q1–Q7** into your lab journal, with:
 
 ---
 
-## Under the hood: the real commands
+## Command reference
 
-You never typed Docker, but every step ran real tools. Here's the equivalent you could run on any
-Linux system after `connect station`:
+Every command in this lab is a standard tool you'll use on real systems. You run them yourself in
+`~/lab`; type `labhelp` on the workstation for the same list.
 
-| Console command | Real command it ran |
-|-----------------|---------------------|
-| `crack easy` | `john --format=raw-md5 --wordlist=wordlists/common-passwords.txt hashes/easy-md5.txt` |
-| `crack sha` | `john --format=raw-sha256 --wordlist=... hashes/medium-sha256.txt` |
-| `crack windows` | `john --format=NT --wordlist=... hashes/windows-ntlm.txt` |
-| `crackzip` | `fcrackzip -D -p wordlists/common-passwords.txt -u secret.zip` |
-| `identify <hash>` | `identify-hash <hash>` (a small teaching script) |
-| show cracked again | `john --show --format=<fmt> <hashfile>` |
+| Task | Command |
+|------|---------|
+| See the files you've been handed | `ls hashes wordlists` |
+| Read a hash file | `cat hashes/easy-md5.txt` |
+| Guess a hash's type by shape | `identify-hash 5f4dcc3b5aa765d61d8327deb882cf99` |
+| Crack the MD5 hashes | `john --format=raw-md5 --wordlist=wordlists/common-passwords.txt hashes/easy-md5.txt` |
+| Crack the SHA-256 hashes | `john --format=raw-sha256 --wordlist=wordlists/common-passwords.txt hashes/medium-sha256.txt` |
+| Crack the Windows NTLM hashes | `john --format=NT --wordlist=wordlists/common-passwords.txt hashes/windows-ntlm.txt` |
+| Re-print what John cracked | `john --format=NT --show hashes/windows-ntlm.txt` |
+| Dictionary-attack the zip (fcrackzip) | `fcrackzip -D -p wordlists/common-passwords.txt secret.zip` |
+| Crack the zip with John | `zip2john secret.zip > secret.hash && john --wordlist=wordlists/common-passwords.txt secret.hash` |
+| Open the zip once you have the password | `python3 -c 'import zipfile; zipfile.ZipFile("secret.zip").extractall(pwd=b"<password>")'` |
 
-Try `connect station` and run `john --show --format=NT hashes/windows-ntlm.txt` yourself — you'll see
-the full recovered credentials. The real rockyou wordlist is also on the machine at
-`/usr/share/wordlists/rockyou.txt` if you want a bigger dictionary.
+A bigger, real dictionary lives on the machine at `/usr/share/wordlists/rockyou.txt` if you want to
+try a larger attack. You are the `analyst` user on `station`, working in `~/lab` — run these
+yourself, inspect the results, and don't be afraid to experiment. Everything resets when you restart
+the lab.

@@ -1,0 +1,49 @@
+#!/bin/sh
+# Module 03 — quick reference, shown by the `labhelp` command.
+cat <<'EOF'
+
+  MODULE 03 — Password Attacks               (you are analyst@station, in ~/lab)
+  -----------------------------------------------------------------------------
+
+  MISSION
+    Crack the leaked hashes and the encrypted archive with real attacker tools.
+    See how many weak passwords fall in milliseconds — those are the ones your
+    password policy must forbid.
+
+  THE COMMANDS YOU'LL NEED  (real Linux — run them, inspect the output)
+
+    ls hashes wordlists                    the files you've been handed
+    cat hashes/easy-md5.txt                look at a hash file
+    identify-hash 5f4dcc3b5aa765d61d8327deb882cf99    guess a hash's type by shape
+
+    # John the Ripper — dictionary attack (--format tells it which hash it is):
+    john --format=raw-md5    --wordlist=wordlists/common-passwords.txt hashes/easy-md5.txt
+    john --format=raw-sha256 --wordlist=wordlists/common-passwords.txt hashes/medium-sha256.txt
+    john --format=NT         --wordlist=wordlists/common-passwords.txt hashes/windows-ntlm.txt
+
+    # Re-print what John has already cracked for a file:
+    john --format=raw-md5 --show hashes/easy-md5.txt
+    john --format=NT      --show hashes/windows-ntlm.txt
+
+    # fcrackzip — dictionary attack against the password-protected archive.
+    # It reports the matching word as  possible pw found: <word>
+    fcrackzip -D -p wordlists/common-passwords.txt secret.zip
+
+    # Or crack the archive with John, the same way you did the hashes:
+    zip2john secret.zip > secret.hash
+    john --wordlist=wordlists/common-passwords.txt secret.hash
+    john --show secret.hash
+
+    # Once you know the password, open the archive and read the flag:
+    python3 -c 'import zipfile; zipfile.ZipFile("secret.zip").extractall(pwd=b"PASSWORD")'
+    cat flag.txt
+
+  TIP
+    John remembers cracked passwords in ~/.john/john.pot, so the second run of
+    the same file is instant and shows nothing new — use  --show  to re-list them.
+    A bigger real wordlist lives at  /usr/share/wordlists/rockyou.txt.
+
+  Full lab guide:  module-03-password-attacks/LAB-GUIDE.md (in the course files)
+  Type  labhelp  any time to see this again.  Type  exit  to leave the lab.
+
+EOF
