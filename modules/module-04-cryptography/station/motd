@@ -1,0 +1,21 @@
+
+  +===================================================================+
+  |        A S S U M E   B R E A C H   —   S E C U R I T Y   L A B     |
+  |                                                                   |
+  |        Cryptography Workstation                                   |
+  |        Module 04 · Cryptography                                   |
+  +===================================================================+
+
+  You are logged in as analyst on 'station' — an offline crypto workstation.
+
+  Two jobs. First, break an intercepted classic cipher (challenge.txt) and
+  see why simple substitution is hopeless against a computer. Then use real
+  GnuPG (PGP) the way it's used in the wild: Alice and Bob exchange a message
+  only the recipient can read, and a signature that proves who sent it.
+
+  Mission: learn what makes encryption weak, and what a key actually protects.
+
+    >  type  labhelp   for the mission and the commands you'll need
+    >  everything here is real — real cipher tool, real GnuPG; try things,
+       break things, and feel free to ask an AI assistant to explain anything
+

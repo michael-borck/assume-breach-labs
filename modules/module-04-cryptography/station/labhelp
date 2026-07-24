@@ -1,0 +1,50 @@
+#!/bin/sh
+# Module 04 — quick reference, shown by the `labhelp` command.
+cat <<'EOF'
+
+  MODULE 04 — Cryptography                    (you are analyst@station)
+  -------------------------------------------------------------------
+
+  MISSION
+    Part A: break an intercepted classic cipher and see why simple
+            substitution can't stand up to a computer.
+    Part B: use real public-key crypto (GnuPG/PGP) — encrypt a message
+            only the recipient can read, and sign one to prove who sent it.
+
+  PART A — CLASSIC CIPHERS  (real cipher tool — run them, read the output)
+
+    cat challenge.txt                     show the intercepted ciphertext
+
+    cipher break "$(cat challenge.txt)"   try all 25 Caesar shifts (crack it)
+    cipher shift 3 HELLO                   shift text forward by 3
+    cipher atbash CRYPTOGRAPHY             apply the Atbash cipher
+
+  PART B — PUBLIC-KEY (PGP) with two people, Alice and Bob
+
+    sh make-keys.sh                        create Alice's and Bob's key pairs
+    gpg --list-keys                        list the keys in the keyring
+
+    # encrypt a message so ONLY Bob can read it (uses Bob's public key)
+    printf '%s' "meet at the docks at midnight" \
+      | gpg --yes --armor --trust-model always -r bob@lab -e -o message.asc
+    cat message.asc                        the scrambled PGP MESSAGE block
+
+    gpg --yes -d message.asc               decrypt it (needs Bob's private key)
+
+    # Alice signs a message with her PRIVATE key; anyone verifies with her public
+    printf '%s' "I approve the transfer" \
+      | gpg --yes --clearsign -u alice@lab -o signed.asc
+    gpg --verify signed.asc                check the signature
+
+    # integrity: flip one character of the ciphertext, then try to decrypt
+    sed -i '3s/./X/' message.asc
+    gpg --yes -d message.asc               it now fails — that's the point
+
+  TIP
+    The cipher tool is deliberately weak — that's the lesson. GnuPG is the real
+    thing: the same commands sign software releases and encrypt email in the wild.
+
+  Full lab guide:  module-04-cryptography/LAB-GUIDE.md (in the course files)
+  Type  labhelp  any time to see this again.  Type  exit  to leave the lab.
+
+EOF
