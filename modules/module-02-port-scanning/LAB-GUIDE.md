@@ -5,9 +5,8 @@
 **What you actually use:** **nmap**, the industry-standard scanner, against a **safe internal lab
 network** you're authorised to test — no scanning of the public internet.
 
-You drive everything from the lab console; you won't type Docker. Each command shows the real nmap
-command it runs (e.g. `[attacker] $ nmap -F 10.2.0.20`) so you learn the tool — see
-[Under the hood](#under-the-hood-the-real-commands).
+You never type Docker. You "log in" to a real attacker workstation and run **real nmap** against a
+real network — the commands you run here are the commands you'd run on a real engagement.
 
 ## Lab Scenario
 
@@ -33,29 +32,23 @@ You don't know the ports yet. Finding them is the job.
 ./start.sh
 ```
 
-Pick module `02`. At the `lab>` prompt (`help` for the list):
+Pick module `02`. The workstation powers on and **logs you straight in as root** on the attacker
+box (`10.2.0.10`) — a real shell with `nmap`. Type **`labhelp`** any time for the scanning commands
+and the target list.
 
-| Command | What it does |
-|---------|--------------|
-| `discover` | Find which machines are alive on the network |
-| `scan <host>` | Quick scan of a host's common ports |
-| `ports <host>` | Fuller scan (top 1000 ports) |
-| `version <host>` | Identify the service **and version** on each open port |
-| `intense <host>` | Aggressive scan (version, OS guess, scripts) |
-| `connect attacker` | Shell on the workstation to run nmap yourself |
+Because these are the genuine tools, feel free to ask an AI assistant to explain any flag or any line
+of output you don't recognise.
 
 ---
 
 ## Phase 1: Who's out there? (host discovery)
 
-Before scanning ports, find the live hosts:
+Before scanning ports, find the live hosts with a ping sweep — it asks every address on the network
+"are you there?" without checking any ports:
 
+```bash
+nmap -sn 10.2.0.0/24
 ```
-lab> discover
-```
-
-This is a **ping sweep** — it asks every address on the network "are you there?" without checking any
-ports.
 
 > **Q1.** How many hosts are alive, and what are their IP addresses? (You'll see the three named
 > machines plus your own attacker box and the network gateway.)
@@ -67,37 +60,37 @@ ports.
 
 ## Phase 2: What's running? (port scanning)
 
-Pick a host and scan its common ports:
+Pick a host and scan its common ports. `-F` is a **fast** scan (top 100 ports):
 
-```
-lab> scan web
-lab> scan files
-lab> scan app
+```bash
+nmap -F 10.2.0.20      # web
+nmap -F 10.2.0.30      # files
+nmap -F 10.2.0.40      # app
 ```
 
 > **Q3.** List the open ports on each of the three hosts. Which host is clearly a **web server**?
 > Which looks like a **file server**?
 
-Now scan more thoroughly — `scan` checks common ports quickly; `ports` checks the top 1000:
+Now scan more thoroughly. Without `-F`, nmap checks the top **1000** ports:
 
-```
-lab> ports app
+```bash
+nmap 10.2.0.40         # app — fuller scan
 ```
 
-> **Q4.** Did the fuller scan on `app` find any port the quick scan missed? Why might a quick scan
-> miss a service running on an unusual port — and why would an attacker bother with the slower, fuller
+> **Q4.** Did the fuller scan on `app` find any port the fast scan missed? Why might a fast scan miss
+> a service running on an unusual port — and why would an attacker bother with the slower, fuller
 > scan?
 
 ---
 
 ## Phase 3: What *exactly* is running? (version detection)
 
-An open port tells you *something* is listening. **Version detection** tells you *what* — the
-software and its version, which is what lets you look up known vulnerabilities.
+An open port tells you *something* is listening. **Version detection** (`-sV`) tells you *what* — the
+software and its version, which is what lets you look up known vulnerabilities:
 
-```
-lab> version files
-lab> version app
+```bash
+nmap -sV 10.2.0.30     # files
+nmap -sV 10.2.0.40     # app
 ```
 
 > **Q5.** Record the service **and version** for each open port on `files` and `app` (e.g.
@@ -106,13 +99,12 @@ lab> version app
 
 ### The mystery service
 
-`version app` finds something on port **9000** that nmap can't fully identify. Investigate it
-yourself — connect to the workstation and talk to the port directly:
+`nmap -sV 10.2.0.40` finds something on port **9000** that nmap can't fully identify. Investigate it
+yourself — talk to the port directly with netcat:
 
-```
-lab> connect attacker
-[attacker] $ nc 10.2.0.40 9000
-[attacker] $ exit
+```bash
+nc 10.2.0.40 9000
+# read what it says, then press Ctrl-C to stop
 ```
 
 > **Q6.** What did the service on port 9000 tell you about itself? What does this show about services
@@ -122,10 +114,11 @@ lab> connect attacker
 
 ## Phase 4: The aggressive scan
 
-`intense` combines version detection, an OS guess, and default scripts in one noisy scan:
+`-A` combines version detection, an OS guess, and default scripts in one noisy scan (`-T4` speeds it
+up):
 
-```
-lab> intense files
+```bash
+nmap -A -T4 10.2.0.30  # files
 ```
 
 > **Q7.** The aggressive scan is far more informative — and far **louder** (it sends many more
@@ -148,7 +141,7 @@ the US *Computer Fraud and Abuse Act*, the UK *Computer Misuse Act*).
 
 ## Wrapping up
 
-Type `quit` to leave (say `y` to shut the machines down).
+Type `exit` to leave (say `y` to shut the machines down). Your changes reset next time you start.
 
 ### Passport prompts (submit these)
 
@@ -156,22 +149,24 @@ Collect **Q1–Q8** into your lab journal, with:
 
 - Your network map: the three hosts, their open ports, and the service+version on each.
 - What the port-9000 mystery service turned out to be, and how you found out.
-- Two sentences on the difference between a quick scan and an aggressive scan, and when you'd use
-  each.
+- Two sentences on the difference between a fast scan and an aggressive scan, and when you'd use each.
 
 ---
 
-## Under the hood: the real commands
+## Command reference
 
-You never typed Docker; every scan was real nmap run from the attacker machine:
+Every scan is real nmap, run from the attacker workstation:
 
-| Console command | Real command it ran |
-|-----------------|---------------------|
-| `discover` | `nmap -sn 10.2.0.0/24` (ping sweep, no port scan) |
-| `scan web` | `nmap -F 10.2.0.20` (fast — top 100 ports) |
-| `ports app` | `nmap 10.2.0.40` (top 1000 ports) |
-| `version files` | `nmap -sV 10.2.0.30` (service + version detection) |
-| `intense files` | `nmap -A -T4 10.2.0.30` (aggressive: -sV, OS, scripts, traceroute) |
+| Task | Command |
+|------|---------|
+| Host discovery (ping sweep) | `nmap -sn 10.2.0.0/24` |
+| Fast scan (top 100 ports) | `nmap -F 10.2.0.20` |
+| Fuller scan (top 1000 ports) | `nmap 10.2.0.40` |
+| Service + version detection | `nmap -sV 10.2.0.30` |
+| Aggressive (version, OS, scripts) | `nmap -A -T4 10.2.0.30` |
+| Talk to a service directly | `nc 10.2.0.40 9000` |
+| Scan specific ports | `nmap -p 22,80,8080 10.2.0.30` |
 
-Try them yourself after `connect attacker`. `nmap` has a manual at `man nmap` and the flags you'll
-use most are `-p` (choose ports), `-sV` (versions), and `-T0..-T5` (speed/stealth).
+Targets: **web** `10.2.0.20`, **files** `10.2.0.30`, **app** `10.2.0.40`. `nmap` has a full manual
+at `man nmap`; the flags you'll use most are `-p` (choose ports), `-sV` (versions), and `-T0..-T5`
+(speed/stealth).

@@ -39,7 +39,9 @@ services:
   #   app    10.2.0.40  HTTP 8080, mystery banner 9000
   # ======================================================================
   m02-attacker:
-    image: ghcr.io/michael-borck/assume-breach-base:latest
+    build:
+      context: ./modules/module-02-port-scanning/attacker
+    image: ghcr.io/michael-borck/assume-breach-attacker:latest
     container_name: m02-attacker
     hostname: attacker
     profiles: ["module-02"]

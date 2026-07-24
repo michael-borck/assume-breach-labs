@@ -1,0 +1,31 @@
+#!/bin/sh
+# Module 02 — quick reference, shown by the `labhelp` command.
+cat <<'EOF'
+
+  MODULE 02 — Port Scanning & Enumeration     (you are root@attacker, 10.2.0.10)
+  -----------------------------------------------------------------------------
+
+  MISSION
+    Map the lab network 10.2.0.0/24: find the live hosts, their open ports, and
+    the service + version behind each. Then investigate anything that looks odd.
+
+  THE COMMANDS YOU'LL NEED  (real nmap — run them, read the output)
+
+    nmap -sn 10.2.0.0/24       host discovery (ping sweep — who is alive?)
+
+    nmap -F 10.2.0.20          fast scan: top 100 ports of one host
+    nmap 10.2.0.40             fuller scan: top 1000 ports
+    nmap -sV 10.2.0.30         identify the service + VERSION on each open port
+    nmap -A -T4 10.2.0.30      aggressive: version + OS guess + scripts (loud!)
+
+    nc 10.2.0.40 9000          talk to a service directly to see what it says
+
+  TARGETS      web 10.2.0.20     files 10.2.0.30     app 10.2.0.40
+
+  TIP  nmap flags you'll use most: -p (choose ports), -sV (versions),
+       -T0..-T5 (slow/stealthy .. fast/noisy).  Full manual: man nmap
+
+  Full lab guide: module-02-port-scanning/LAB-GUIDE.md (in the course files)
+  Type  labhelp  to see this again.  Type  exit  to leave the lab.
+
+EOF

@@ -37,6 +37,9 @@ jobs:
           - name: assume-breach-accesslab
             context: modules/module-01-access-control/station
             file: modules/module-01-access-control/station/Dockerfile
+          - name: assume-breach-attacker
+            context: modules/module-02-port-scanning/attacker
+            file: modules/module-02-port-scanning/attacker/Dockerfile
           - name: assume-breach-node
             context: modules/module-07-firewalls
             file: modules/module-07-firewalls/node/Dockerfile

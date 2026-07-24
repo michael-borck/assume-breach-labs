@@ -1,0 +1,25 @@
+
+  +===================================================================+
+  |        A S S U M E   B R E A C H   —   S E C U R I T Y   L A B     |
+  |                                                                   |
+  |        Penetration Testing Workstation                            |
+  |        Module 02 · Port Scanning & Enumeration                    |
+  +===================================================================+
+
+  You are logged in as root on 'attacker' (10.2.0.10) — a workstation with
+  nmap, authorised to test the lab network 10.2.0.0/24.
+
+  Three machines are out there. You do NOT know their open ports yet —
+  finding them is the whole job:
+
+      web      10.2.0.20      ? ports
+      files    10.2.0.30      ? ports
+      app      10.2.0.40      ? ports
+
+  Mission: map the network — which hosts are alive, what services they run,
+           and which of those look old or unexpected.
+
+    >  type  labhelp   for the scanning commands you'll need
+    >  everything here is real nmap on a real network — try things, and
+       feel free to ask an AI assistant to explain any flag
+
