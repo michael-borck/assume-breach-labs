@@ -12,6 +12,10 @@ if [ -n "$DNS_SERVER" ]; then
     echo "nameserver $DNS_SERVER" > /etc/resolv.conf
 fi
 
+# Name resolution for the lab hosts + start the SSH server (so the firewall admin
+# can `ssh` here to test connectivity across the firewall).
+/lab-node-setup.sh
+
 echo "[$(hostname)] ready"
 ip -4 -brief addr show | grep -v '^lo'
 echo "[$(hostname)] routes:"

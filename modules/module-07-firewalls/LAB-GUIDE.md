@@ -4,10 +4,10 @@
 **What you actually use:** a real firewall (`iptables`) on real Linux machines — the same
 technology that protects real networks, not a simulation.
 
-You drive everything from a single **lab console**. You will *not* type any Docker commands: you
-log in, and then use plain commands like `ping pc2 pc1` and `rules load`. The console shows you the
-real command it runs on each machine (e.g. `[pc2] $ ping 10.1.1.2`) so you still learn the real
-tools — see [Under the hood](#under-the-hood-the-real-commands) at the end.
+You never type any Docker. You "log in" to the **firewall** — the machine you administer — and use
+real `iptables` there. To test your rules, you `ssh` to a workstation and `ping` across the firewall,
+exactly as a real network engineer would. These are the real commands, so an AI assistant can help
+you read any output.
 
 ## Lab Scenario
 
@@ -18,18 +18,16 @@ write them in — control who can reach the protected machine, and understand th
 **dropping** traffic silently and **rejecting** it with a message.
 
 ```
-        INSIDE  (protected)              OUTSIDE  (other staff)
-     +------------------------+       +--------------------------+
-     |  pc1   10.1.1.2        |  FW   |  pc2   10.1.2.3          |
-     |  dns   10.1.1.253      | ----- |  pc3   10.1.2.4          |
-     |                        |       |  pc4   10.1.2.5          |
-     +------------------------+       +--------------------------+
+        INSIDE  (protected)                 OUTSIDE  (other staff)
+     +----------------------+            +------------------------+
+     |  pc1   10.1.1.2      |            |  pc2   10.1.2.3        |
+     |  dns   10.1.1.253    | [FIREWALL] |  pc3   10.1.2.4        |
+     |                      |  in .1.254 |  pc4   10.1.2.5        |
+     +----------------------+  out .2.254+------------------------+
         The firewall routes and filters traffic between the two sides.
 ```
 
 ## Getting in
-
-From the repo folder, run:
 
 ```bash
 ./start.sh
@@ -37,55 +35,50 @@ From the repo folder, run:
 
 (On Windows: install [Git for Windows](https://git-scm.com/download/win) once, then double-click `start.bat`.)
 
-You'll see a welcome banner, the machines will power on, and you'll land at a `lab>` prompt. Type
-`help` any time to see the commands. The ones you need:
+Pick module `07`. The machines power on and you're **logged in as root on the firewall**. Type
+**`labhelp`** for the commands and **`netmap`** to redraw the network any time.
 
-| Command | What it does |
-|---------|--------------|
-| `ping <from> <to>` | Ping one machine from another, e.g. `ping pc2 pc1` |
-| `rules show` | List the firewall's current rules |
-| `rules load` | Apply this lab's teaching ruleset |
-| `rules clear` | Remove all rules (allow everything) |
-| `connect <host>` | Open a shell *on* a machine (for the curious) |
-| `dns <name>` | Look up a name, e.g. `dns coke.dreamland.com.au` |
-| `map` | Show the network diagram |
-| `quit` | Leave the lab |
+Two places you'll work:
+- **On the firewall** (where you start) — manage the rules with `iptables`.
+- **On a workstation** — `ssh pc2` to hop there, run your test, then `exit` back to the firewall.
 
 ---
 
 ## Phase 1: The network with no firewall rules
 
-The firewall starts **empty** — nothing is blocked. Establish that baseline.
+The firewall starts **empty** — nothing is blocked. Establish that baseline. On the firewall:
 
-```
-lab> rules show
-```
-
-You should see an empty rule list. Now check that everyone can reach the protected machine:
-
-```
-lab> ping pc2 pc1
-lab> ping pc3 pc1
-lab> ping pc4 pc1
+```bash
+iptables -L FORWARD -n -v --line-numbers
 ```
 
-All three should succeed (`0% packet loss`).
+You should see an empty FORWARD rule list. Now check that the outside machines can reach the
+protected machine — hop to each and ping `pc1`:
+
+```bash
+ssh pc2
+ping -c3 pc1
+exit
+```
+
+Repeat from `pc3` and `pc4` (`ssh pc3` … `ping -c3 pc1` … `exit`). All three should succeed
+(`0% packet loss`).
 
 > **Q1.** With no firewall rules, can every outside machine reach `pc1`? Paste the result of
-> `ping pc2 pc1`.
+> `ping -c3 pc1` run from `pc2`.
 
 > **Q2.** In one sentence each, what is **ICMP** and what is **`ping`**? (Hint: `ping` is the
 > everyday tool; ICMP is the underlying message type it uses.)
 
 ---
 
-## Phase 2: Apply firewall rules — DROP vs DENY
+## Phase 2: Apply firewall rules — DROP vs REJECT
 
-Now switch the firewall on with this lab's ruleset:
+Back on the firewall, switch on this lab's ruleset and look at it:
 
-```
-lab> rules load
-lab> rules show
+```bash
+/rules/rules.sh
+iptables -L FORWARD -n -v --line-numbers
 ```
 
 You'll see three rules, in order:
@@ -101,22 +94,24 @@ Rules are read top to bottom, and the **first** matching rule wins.
 > **Q3.** Before testing, predict: what's the difference between **DROP** (silent) and **REJECT**
 > (refuse with an error), from the point of view of the person being blocked?
 
-Now test each machine and watch *how* each one fails:
+Now test each machine and watch *how* each one fails. From the firewall, `ssh` to each and ping:
 
+```bash
+ssh pc2      # then:  ping -c3 pc1   -> DROP:   just hangs, then 100% loss, NO error
+ssh pc3      # then:  ping -c3 pc1   -> REJECT: fails fast, "Destination Host Unreachable"
+ssh pc4      # then:  ping -c3 pc1   -> ACCEPT: succeeds
 ```
-lab> ping pc2 pc1     # DROP   -> just hangs, then 100% loss, NO error
-lab> ping pc3 pc1     # REJECT -> fails fast: "Destination Host Unreachable"
-lab> ping pc4 pc1     # ACCEPT -> succeeds
-```
+
+(Run `ping -c3 pc1` after each `ssh`, then `exit` back to the firewall.)
 
 > **Q4.** Record all three results. Which machine was *told* it was blocked, and which was met with
 > silence? Why might a real firewall administrator prefer **DROP** (silence) at the edge of a
 > network — what does silence deny an attacker?
 
-Check how many packets each rule caught:
+Check how many packets each rule caught — on the firewall:
 
-```
-lab> rules show
+```bash
+iptables -L FORWARD -n -v --line-numbers
 ```
 
 > **Q5.** The `pkts` column counts packets that hit each rule. Which rule caught `pc2`'s traffic?
@@ -126,49 +121,45 @@ lab> rules show
 
 ## Phase 3: Order matters
 
-Firewalls read rules top to bottom and stop at the first match. This means the *order* of rules can
-change everything. Let's prove it by putting an "allow" for `pc3` **above** the reject rule.
+Firewalls read rules top to bottom and stop at the first match, so the *order* of rules can change
+everything. Prove it by inserting an ACCEPT for `pc3` **above** the reject rule. On the firewall:
 
-```
-lab> connect firewall
-```
-
-You're now on the firewall itself (the prompt changes to `[firewall] $`). Insert an ACCEPT for
-`pc3` at position 2, then look at the list:
-
-```
-[firewall] $ iptables -I FORWARD 2 -p icmp -s 10.1.2.4 -d 10.1.1.2 -j ACCEPT
-[firewall] $ iptables -L FORWARD -n -v --line-numbers
-[firewall] $ exit
+```bash
+iptables -I FORWARD 2 -p icmp -s 10.1.2.4 -d 10.1.1.2 -j ACCEPT
+iptables -L FORWARD -n -v --line-numbers
 ```
 
-Back at the `lab>` prompt, re-test `pc3`:
+Now re-test `pc3`:
 
-```
-lab> ping pc3 pc1     # now SUCCEEDS — the new ACCEPT is reached before the REJECT
+```bash
+ssh pc3
+ping -c3 pc1     # now SUCCEEDS — the new ACCEPT is reached before the REJECT
+exit
 ```
 
 > **Q6.** `pc3` was blocked a moment ago and now gets through — and you never touched the reject
 > rule. What changed? In one sentence, why does rule order matter when writing firewall policy?
 
-Reset to the taught ruleset when you're done:
+Reset to the taught ruleset when you're done (on the firewall):
 
-```
-lab> rules load
+```bash
+/rules/rules.sh
 ```
 
 ---
 
 ## Phase 4: Reaching a machine by name (DNS)
 
-Machines are easier to reach by name than by number. The lab has a name server. From the console:
+Machines are easier to reach by name than by number. The lab has a name server (`dns`, 10.1.1.253),
+and `pc1` is configured to use it. Hop to `pc1` and look a name up:
 
-```
-lab> dns coke.dreamland.com.au
+```bash
+ssh pc1
+getent hosts coke.dreamland.com.au
+exit
 ```
 
-It resolves to `10.1.2.5` — that's `pc4`. So a name lookup plus the firewall's ACCEPT rule together
-let you reach it.
+It resolves to `10.1.2.5` — that's `pc4`.
 
 > **Q7.** What address did `coke.dreamland.com.au` resolve to? Two separate things had to work for
 > that to be useful — name resolution, and then the firewall allowing the traffic. Explain both in a
@@ -193,34 +184,35 @@ network mask.
 
 ## Wrapping up
 
-Type `quit` to leave. You'll be asked whether to shut the machines down — say yes unless you're
-coming straight back.
+Type `exit` on the firewall to leave. You'll be asked whether to shut the machines down — say yes
+unless you're coming straight back. Your changes reset next time you start.
 
 ### Passport prompts (submit these)
 
 Collect **Q1–Q8** into your lab journal, with:
 
 - The three ping results from Phase 2 (DROP vs REJECT vs ACCEPT) side by side.
-- A copy of `rules show` after Phase 3 (with the reordered rules).
+- A copy of `iptables -L FORWARD -n -v --line-numbers` after Phase 3 (with the reordered rules).
 - Your one-line definitions of **ICMP**, **DROP**, and **REJECT**.
 
 ---
 
-## Under the hood: the real commands
+## Command reference
 
-You never had to type Docker, but everything above ran real tools on real machines. Here's what each
-console command actually did, so you can do it yourself on any Linux system:
+Everything is real tools on real machines. On the **firewall** you manage the ruleset; from a
+**workstation** (reached with `ssh`) you test it.
 
-| Console command | Real command it ran |
-|-----------------|---------------------|
-| `ping pc2 pc1` | `ping 10.1.1.2` **on** the pc2 machine |
-| `rules load` | `iptables` rules applied on the firewall (see `modules/module-07-firewalls/rules/rules.sh`) |
-| `rules show` | `iptables -L FORWARD -n -v --line-numbers` on the firewall |
-| `rules clear` | `iptables -F FORWARD` on the firewall |
-| `connect pc3` | opened a shell on the pc3 machine |
-| `dns coke.dreamland.com.au` | `getent hosts coke.dreamland.com.au` on pc1 |
+| Where | Task | Command |
+|-------|------|---------|
+| firewall | Show the FORWARD rules | `iptables -L FORWARD -n -v --line-numbers` |
+| firewall | Load the teaching ruleset | `/rules/rules.sh` |
+| firewall | Clear all rules (allow all) | `iptables -F FORWARD` |
+| firewall | Insert a rule at position N | `iptables -I FORWARD 2 -p icmp -s 10.1.2.4 -d 10.1.1.2 -j ACCEPT` |
+| firewall | Hop to a workstation | `ssh pc2` (then `exit` to return) |
+| workstation | Ping across the firewall | `ping -c3 pc1` |
+| pc1 | Look a name up (DNS) | `getent hosts coke.dreamland.com.au` |
 
-The firewall ruleset (`rules.sh`) in full:
+The firewall ruleset (`rules/rules.sh`) in full:
 
 ```sh
 iptables -A FORWARD -p icmp -s 10.1.2.3 -d 10.1.1.2 -j DROP                                        # pc2 -> pc1: Drop

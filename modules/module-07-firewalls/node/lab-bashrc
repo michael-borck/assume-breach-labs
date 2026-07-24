@@ -1,0 +1,11 @@
+
+# --- Assume Breach Labs: security-workstation feel ---------------------------
+# Appended to /etc/bash.bashrc (and root's ~/.bashrc). Shows the welcome banner
+# once per session plus which machine you're on (so ssh-ing to pc2 makes clear
+# you've moved), and uses a themed prompt. Guarded so nested shells don't repeat.
+if [ -z "$LAB_MOTD_SHOWN" ]; then
+    [ -f /etc/motd-lab ] && cat /etc/motd-lab
+    printf "  You are logged in on:  %s\n\n" "$(hostname)"
+    export LAB_MOTD_SHOWN=1
+fi
+PS1='\[\033[1;32m\]\u@\h\[\033[0m\]:\[\033[1;34m\]\w\[\033[0m\]\$ '

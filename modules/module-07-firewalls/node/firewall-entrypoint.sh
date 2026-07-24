@@ -7,6 +7,9 @@ set -e
 # ip_forward is normally set via the compose `sysctls:` key; this is a fallback.
 sysctl -w net.ipv4.ip_forward=1 >/dev/null 2>&1 || true
 
+# Name resolution for the lab hosts + start the SSH server (shared with the pcs).
+/lab-node-setup.sh
+
 echo "=============================================="
 echo " Firewall up. IP forwarding: $(cat /proc/sys/net/ipv4/ip_forward)"
 echo " Inside : 10.1.1.254/24   Outside: 10.1.2.254/24"

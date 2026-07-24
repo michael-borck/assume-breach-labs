@@ -1,0 +1,15 @@
+#!/bin/sh
+# `netmap` — redraw the Module 07 network diagram at any time.
+cat <<'EOF'
+
+        INSIDE  (protected)                 OUTSIDE  (other staff)
+     +----------------------+            +------------------------+
+     |  pc1   10.1.1.2      |            |  pc2   10.1.2.3        |
+     |  dns   10.1.1.253    | [FIREWALL] |  pc3   10.1.2.4        |
+     |                      |  in .1.254 |  pc4   10.1.2.5        |
+     |                      |  out .2.254|                        |
+     +----------------------+            +------------------------+
+        The firewall ROUTES and FILTERS traffic between the two sides.
+        Cross-side traffic (e.g. pc2 -> pc1) passes the FORWARD ruleset.
+
+EOF

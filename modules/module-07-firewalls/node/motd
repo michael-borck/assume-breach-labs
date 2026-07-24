@@ -1,0 +1,25 @@
+
+  +===================================================================+
+  |        A S S U M E   B R E A C H   —   S E C U R I T Y   L A B     |
+  |                                                                   |
+  |        Network Security Workstation                               |
+  |        Module 07 · Firewalls & Filtering                          |
+  +===================================================================+
+
+  THE NETWORK   (type  netmap  to redraw this any time)
+
+        INSIDE  (protected)                 OUTSIDE  (other staff)
+     +----------------------+            +------------------------+
+     |  pc1   10.1.1.2      |            |  pc2   10.1.2.3        |
+     |  dns   10.1.1.253    | [FIREWALL] |  pc3   10.1.2.4        |
+     |                      |  in .1.254 |  pc4   10.1.2.5        |
+     |                      |  out .2.254|                        |
+     +----------------------+            +------------------------+
+        The firewall ROUTES and FILTERS traffic between the two sides.
+
+  You are the firewall administrator. Edit the FORWARD ruleset here on the
+  firewall, then  ssh  to a workstation to test what actually gets through.
+
+    >  type  labhelp   for the commands (manage rules here, test from a pc)
+    >  real iptables + ssh on real machines — ask an AI to explain any command
+

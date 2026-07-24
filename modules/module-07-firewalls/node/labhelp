@@ -1,0 +1,34 @@
+#!/bin/sh
+# Module 07 — quick reference, shown by the `labhelp` command. Host-aware.
+HN="$(hostname)"
+cat <<EOF
+
+  MODULE 07 — Firewalls & Filtering              (you are on: $HN)
+  ------------------------------------------------------------------
+
+  MISSION
+    The firewall filters traffic between INSIDE (pc1, dns) and OUTSIDE
+    (pc2, pc3, pc4). Load the ruleset, then test which pings get through and
+    see the difference between DROP (silent) and REJECT (an active refusal).
+
+  ON THE FIREWALL — manage the FORWARD ruleset:
+    iptables -L FORWARD -n -v --line-numbers    show the current rules
+    /rules/rules.sh                             load the teaching ruleset
+    iptables -F FORWARD                          clear all rules (allow all)
+
+  TEST FROM A WORKSTATION — ssh over, then ping across the firewall:
+    ssh pc2      then:  ping -c3 pc1       (outside -> inside)
+    ssh pc3      then:  ping -c3 pc1
+    ssh pc4      then:  ping -c3 pc1
+    exit         to come back to the firewall
+
+    Once rules are loaded, watch HOW each ping fails:
+      DROP   -> ping just times out (100% loss, no reply at all)
+      REJECT -> ping says "Destination Host Unreachable" (an active refusal)
+
+  NAME LOOKUP (DNS)     ssh pc1   then:  getent hosts coke.dreamland.com.au
+
+  Type  netmap  for the network diagram.
+  Full guide:  module-07-firewalls/LAB-GUIDE.md      Type  exit  to leave.
+
+EOF
