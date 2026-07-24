@@ -1,0 +1,20 @@
+
+  +===================================================================+
+  |        A S S U M E   B R E A C H   —   S E C U R I T Y   L A B     |
+  |                                                                   |
+  |        Forensic Analysis Workstation                              |
+  |        Module 08 · Digital Forensics                              |
+  +===================================================================+
+
+  You are logged in as analyst on 'station' — an offline forensic workstation.
+  Two cases are waiting in your working directory (/home/analyst/lab):
+
+    emails/   three messages — one is a fake.  Trace where they really came from.
+    texts/    writing samples from three authors, plus one 'unknown' document.
+
+  Mission: catch the spoofed email, and unmask who wrote the anonymous text.
+
+    >  type  labhelp   for the mission and the commands you'll need
+    >  everything here is real — the tools, the evidence, the output.
+       Try things, and feel free to ask an AI assistant to explain anything.
+

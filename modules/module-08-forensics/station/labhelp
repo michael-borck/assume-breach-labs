@@ -1,0 +1,41 @@
+#!/bin/sh
+# Module 08 — quick reference, shown by the `labhelp` command.
+cat <<'EOF'
+
+  MODULE 08 — Digital Forensics            (you are analyst@station, in ~/lab)
+  ---------------------------------------------------------------------------
+
+  MISSION
+    Case A: three emails arrived. Trace where each really came from and catch
+            the spoofed one — attackers forge the visible sender, not the path.
+    Case B: unmask the author of the 'unknown' document by their writing style
+            (stylometry) — the technique that settled the Federalist Papers.
+
+  CASE A — EMAIL FORENSICS  (evidence in emails/)
+
+    ls emails/                        the three messages: legitimate, phishing, spam
+    sed '/^$/q' emails/phishing.eml   show just the raw header block of a message
+    cat emails/phishing.eml           the whole raw .eml file
+
+    mailtrace emails/legitimate.eml   trace origin + check SPF/DKIM/DMARC, give a verdict
+    mailtrace emails/phishing.eml     ...run it on each of the three
+    mailtrace emails/spam.eml
+
+  CASE B — AUTHORSHIP ANALYSIS  (evidence in texts/)
+
+    wc -w texts/*.txt                 how much writing we have from each author
+    ls texts/                         hamilton, madison, jay, and the unknown document
+
+    stylometry texts unknown.txt      compare 'unknown' to each author (chi-square:
+                                      lower = closer writing style; names the match)
+    stylometry                        same thing using the built-in defaults
+
+  TIP
+    The last 'Received:' header is the ORIGIN — the first server to touch the
+    message. Compare the From, Reply-To and Return-Path domains: when they
+    disagree and SPF fails, someone is lying about who they are.
+
+  Full lab guide:  module-08-forensics/LAB-GUIDE.md (in the course files)
+  Type  labhelp  any time to see this again.  Type  exit  to leave the lab.
+
+EOF
