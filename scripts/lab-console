@@ -23,6 +23,8 @@ set -uo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOGFILE="$(mktemp -t lab-console.XXXXXX)"
+LAB_VERSION="$(head -1 "$PROJECT_ROOT/VERSION" 2>/dev/null | tr -d '\r')"
+LAB_VERSION="${LAB_VERSION:-unknown}"
 
 # Real escape characters via $'...' so colours survive heredocs and plain echo
 # (a bare '\033' string only works inside printf format strings). No colours
@@ -85,13 +87,10 @@ need_docker() {
 
 lab_is_up() { [ -n "$(docker ps -q --filter "name=${UP_CHECK}" 2>/dev/null)" ]; }
 
-bring_up() {
-    if lab_is_up; then printf "${C_OK}Lab already running.${NC}\n"; return; fi
-    printf "${C_DIM}Connecting to the lab...${NC}\n"; sleep 1
-    printf "${C_DIM}Powering on the machines...${NC}\n"
-    # Pull the published images first (all images are public on GHCR); only fall
-    # back to a local build if the pull fails. Then start without --build to
-    # avoid the legacy builder racing when several services share one image tag.
+# Pull the published images (all are public on GHCR), falling back to a local
+# build only if the pull fails, then start without --build to avoid the legacy
+# builder racing when several services share one image tag. Dots while it works.
+compose_up() {
     (
         cd "$PROJECT_ROOT"
         { docker compose --profile "module-${MODULE_NO}" pull \
@@ -101,8 +100,48 @@ bring_up() {
     local pid=$!
     while kill -0 "$pid" 2>/dev/null; do printf "."; sleep 1; done
     printf "\n"
-    if ! wait "$pid" || ! lab_is_up; then
-        printf "${C_ERR}Could not start the lab. Details:${NC}\n"; tail -n 15 "$LOGFILE"; exit 1
+    wait "$pid"
+}
+
+bring_up() {
+    # Always pull + `up -d`, even when the machines are already running. An
+    # earlier version returned early on "already running", which meant a
+    # container started before a lab was fixed lived on forever: the pull was
+    # skipped, so the updated image never arrived and the student kept getting
+    # the old lab. `up -d` is cheap when nothing changed, and recreates only the
+    # containers whose image actually moved.
+    local was_up=""
+    if lab_is_up; then
+        was_up=1
+        printf "${C_DIM}Lab already running — checking for updates...${NC}\n"
+    else
+        printf "${C_DIM}Connecting to the lab...${NC}\n"; sleep 1
+        printf "${C_DIM}Powering on the machines...${NC}\n"
+    fi
+
+    compose_up
+    local rc=$?
+
+    # Machines created before docker-compose.yml pinned the project name belong
+    # to a project named after that copy's folder, so this one can't take them
+    # over — Compose stops on a container-name conflict. They're disposable
+    # (all lab state is baked into the image), so remove and rebuild them.
+    if grep -q "is already in use by container" "$LOGFILE" 2>/dev/null; then
+        printf "${C_DIM}Replacing lab machines left over from an older copy...${NC}\n"
+        # shellcheck disable=SC2046  # word splitting is what we want here
+        docker rm -f $(docker ps -aq --filter "name=^m${MODULE_NO}-") >>"$LOGFILE" 2>&1
+        compose_up
+        rc=$?
+    fi
+
+    if [ "$rc" -ne 0 ] || ! lab_is_up; then
+        # Offline with the lab already up is survivable — the student just
+        # doesn't get updates this session. Anything else is fatal.
+        if [ -n "$was_up" ] && lab_is_up; then
+            printf "${C_WARN}Couldn't check for updates (no network?) — using the machines already running.${NC}\n"
+        else
+            printf "${C_ERR}Could not start the lab. Details:${NC}\n"; tail -n 15 "$LOGFILE"; exit 1
+        fi
     fi
     printf "${C_OK}Connection established. You are logged in.${NC}\n"
 }
@@ -118,7 +157,12 @@ banner() {
   |   Module ${MODULE_NO}: ${MODULE_TITLE}
   +===================================================================+
 EOF
-    printf "${NC}\n"
+    printf "${NC}"
+    # Stamp the lab-pack version on every launch. A student's screenshot then says
+    # which copy they're running — the common failure is an old unzipped folder
+    # (macOS keeps "...-main 2", "...-main 3" side by side) rather than a broken
+    # lab. No VERSION file at all means a copy older than 2026.07.28.
+    printf "${C_DIM}  lab pack %s${NC}\n\n" "$LAB_VERSION"
 }
 
 # Open a URL in the host's browser (for browser-based modules that set BROWSER_URL)
@@ -155,7 +199,7 @@ do_connect() {
 # workstation every time.
 enter_shell() {
     local host="$1"
-    printf "${C_OK}Connection established.${NC} Logging in to the %s workstation...\n\n" "$host"
+    printf "${C_DIM}Logging in to the %s workstation...${NC}\n\n" "$host"
     docker exec -it "$(host_container "$host")" bash 2>/dev/null \
         || docker exec -it "$(host_container "$host")" sh
     teardown_prompt

@@ -170,20 +170,34 @@ You start every lab the same way — the first run pulls the images it needs aut
 ./start.sh       # on Windows: double-click start.bat, or `bash start.sh` in Git Bash
 ```
 
-You should see a welcome banner, the machines powering on, and a `lab>` prompt. Type `help`, then
-`quit` (answer `y` to shut down). If you got the `lab>` prompt, your environment is ready.
+Pick module `01`. You should see a welcome banner with the **lab pack version** under it, the machines
+powering on, and then a root shell on the workstation:
+
+```
+root@station:/office#
+```
+
+Type `labhelp` to see what the machine is for, then `exit` (answer `y` to shut the machines down). If
+you got that prompt, your environment is ready.
+
+> Most modules log you straight into a real machine like this. A few (05, 06, 09, 10) are browser- or
+> console-driven and give you a `lab>` prompt instead — type `help` there for that module's commands.
 
 ## 6. How a lab works
 
-You drive labs from the **lab console** — you never type Docker commands.
+You start every lab the same way — you never type Docker commands.
 
 - **Start:** `./start.sh` logs you in and powers on that module's machines.
-- **Work:** at the `lab>` prompt, use plain commands — `ping pc2 pc1`, `rules load`, `connect pc3`.
-  Type `help` for the list. Each command shows the real tool it runs, so you learn the real thing.
+- **Work:** most modules drop you into a **real shell** on a lab machine (`root@station:/office#`),
+  where you run genuine Linux and security tools — `chmod`, `nmap`, `john`, `tcpdump`. Type `labhelp`
+  for the mission and a starter set of commands. Because the commands and error messages are real,
+  an AI assistant can help you when you get stuck. The browser/console modules (05, 06, 09, 10) give
+  you a `lab>` prompt instead; type `help` there.
 - **Follow** the module's `LAB-GUIDE.md` step by step.
 - **Record** your answers/screenshots for the passport prompts at the end of each guide — that's
   what you submit for the lab journal.
-- **Leave:** type `quit` (you'll be asked whether to shut the machines down).
+- **Leave:** type `exit` (or `quit` at a `lab>` prompt). You'll be asked whether to shut the machines
+  down — answering `n` makes the next launch faster.
 
 > Curious what's underneath, or an instructor? The Makefile exposes the raw controls
 > (`make m07`, `make status`, `make stop`), and each guide ends with an "Under the hood" section
@@ -199,6 +213,24 @@ You drive labs from the **lab console** — you never type Docker commands.
    **inner** folder if you're on Windows.
 3. **The first launch downloads about a gigabyte.** It can look frozen. It isn't. Once it
    finishes, every later launch takes seconds.
+
+### Are you running an old copy?
+
+If a lab behaves differently from its guide — a command it says to run comes back
+`unknown command`, say — you are probably launching an out-of-date folder. Downloading the ZIP again
+does **not** replace the old one: macOS and Windows keep both, as `assume-breach-labs-main 2`,
+`assume-breach-labs-main 3`, and so on. It's easy to `cd` into the original by habit.
+
+Check the line under the welcome banner:
+
+```
+  lab pack 2026.07.28
+```
+
+If that line is missing, or the date is older than the one on the unit site, delete the old folders,
+[download the ZIP again](https://github.com/michael-borck/assume-breach-labs/archive/refs/heads/main.zip)
+and launch from the fresh one. You don't need to clean up Docker — the launcher replaces stale lab
+machines by itself.
 
 Still stuck? Restart the computer. Genuinely — it fixes Docker more often than it should.
 

@@ -13,6 +13,14 @@
 # images) will use a NAMED VOLUME populated at runtime, never a host bind mount,
 # so it works on macOS/exFAT, Windows and Linux alike.
 
+# Pin the project name. Without this, Compose derives it from the folder name, so
+# every unzipped copy ("assume-breach-labs-main", "...-main 2", a git clone) is a
+# SEPARATE project. Containers from one copy then look foreign to the next — the
+# fixed container_names collide and Compose can't update the machines, leaving a
+# student stuck on a stale lab. One name means one set of lab machines, wherever
+# the folder lives.
+name: assume-breach-labs
+
 services:
 
   # ======================================================================
