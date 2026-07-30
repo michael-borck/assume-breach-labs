@@ -1,7 +1,10 @@
 # Module 06 — Wireshark in the browser (LinuxServer.io image, multi-arch amd64+arm64,
 # web GUI on port 3000). Our own teaching captures are baked into /pcaps; a fetch
 # helper can pull additional real-world captures on demand (see fetch-samples).
-FROM lscr.io/linuxserver/wireshark:latest
+# PINNED: this base ships a whole desktop + WebRTC stack, so :latest can change the
+# GUI's behaviour (and its security posture) between one class and the next. The
+# compose file's removal of seccomp:unconfined was verified against THIS tag.
+FROM lscr.io/linuxserver/wireshark:4.6.6-r0-ls319
 
 # Our crafted teaching captures (freely redistributable — we made them).
 COPY pcaps /pcaps

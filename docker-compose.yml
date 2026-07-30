@@ -37,6 +37,7 @@ services:
     hostname: station
     profiles: ["module-01"]
     command: ["sleep", "infinity"]
+    networks: [lab-isolated]
 
   # ======================================================================
   # Module 02 — Port Scanning. An attacker workstation (nmap) and a small
@@ -61,7 +62,7 @@ services:
         ipv4_address: 10.2.0.10
 
   m02-web:
-    image: nginx:alpine
+    image: nginx:1.31.3-alpine   # pinned: banner text is what students enumerate
     container_name: m02-web
     hostname: web
     profiles: ["module-02"]
@@ -113,6 +114,7 @@ services:
     hostname: station
     profiles: ["module-03"]
     command: ["sleep", "infinity"]
+    networks: [lab-isolated]
 
   # ======================================================================
   # Module 04 — Cryptography. A single self-contained workstation with the
@@ -128,6 +130,7 @@ services:
     hostname: station
     profiles: ["module-04"]
     command: ["sleep", "infinity"]
+    networks: [lab-isolated]
 
   # ======================================================================
   # Module 05 — Risk Management. Serves a single self-contained web page (an
@@ -143,12 +146,23 @@ services:
     hostname: riskcalc
     profiles: ["module-05"]
     ports:
-      - "8055:80"
+      - "${LAB_BIND:-127.0.0.1}:8055:80"
 
   # ======================================================================
   # Module 06 — Packet Capture & Analysis. Wireshark in the browser
   # (LinuxServer.io, web GUI on 3000 -> host 3006). Our teaching captures are
   # baked into /pcaps; `fetch` downloads extra real-world samples on demand.
+  #
+  # This is the most exposed service in the series: the web GUI is a full desktop
+  # session WITH A TERMINAL, and the container holds NET_ADMIN.
+  #
+  # It CANNOT be put on an internal network — verified that `internal: true`
+  # silently discards published ports, and this lab is reached via the browser. So
+  # it keeps internet egress, and gets the two locks that are available instead:
+  #   1. bound to 127.0.0.1 (was 0.0.0.0 — reachable from the whole subnet)
+  #   2. CUSTOM_USER/PASSWORD set, so the GUI demands a login. Without these the
+  #      LinuxServer image serves the desktop UNAUTHENTICATED.
+  # Override the default credentials per-site with LAB_GUI_USER / LAB_GUI_PASSWORD.
   # ======================================================================
   m06-wireshark:
     build:
@@ -158,11 +172,17 @@ services:
     container_name: m06-wireshark
     hostname: wireshark
     profiles: ["module-06"]
-    cap_add: ["NET_ADMIN"]
-    security_opt: ["seccomp:unconfined"]
+    cap_add: ["NET_ADMIN"]          # required: live capture on the container's own NIC
+    # NOTE: seccomp:unconfined was here and has been REMOVED. Verified on Docker
+    # Desktop 28.4.0 that the selkies/WebRTC GUI starts and serves fine under the
+    # default seccomp profile. If a future image regresses, restore it with:
+    #   security_opt: ["seccomp:unconfined"]
     shm_size: "1gb"
+    environment:
+      CUSTOM_USER: "${LAB_GUI_USER:-analyst}"
+      PASSWORD: "${LAB_GUI_PASSWORD:-labpass}"
     ports:
-      - "3006:3000"
+      - "${LAB_BIND:-127.0.0.1}:3006:3000"
 
   # ======================================================================
   # Module 08 — Digital Forensics. A single workstation with two offline Python
@@ -178,6 +198,7 @@ services:
     hostname: station
     profiles: ["module-08"]
     command: ["sleep", "infinity"]
+    networks: [lab-isolated]
 
   # ======================================================================
   # Module 09 — Human Factors. Two browser pieces: a self-hosted security
@@ -194,7 +215,7 @@ services:
     hostname: quiz
     profiles: ["module-09"]
     ports:
-      - "8090:80"
+      - "${LAB_BIND:-127.0.0.1}:8090:80"
 
   m09-certs:
     build:
@@ -205,9 +226,9 @@ services:
     hostname: badcerts
     profiles: ["module-09"]
     ports:
-      - "8443:8443"
-      - "8444:8444"
-      - "8445:8445"
+      - "${LAB_BIND:-127.0.0.1}:8443:8443"
+      - "${LAB_BIND:-127.0.0.1}:8444:8444"
+      - "${LAB_BIND:-127.0.0.1}:8445:8445"
 
   # ======================================================================
   # Module 11 — VPN. A client and a server on separate networks, with an
@@ -365,14 +386,66 @@ services:
   # flaw to a defence. Browser-based, no CLI.
   # ======================================================================
   m10-web:
-    image: bkimminich/juice-shop:latest
+    # PINNED: Juice Shop changes its challenges between releases. Pinning keeps the
+    # LAB-GUIDE's steps valid — an unpinned :latest can silently move the lab out
+    # from under a guide written against an earlier version.
+    image: bkimminich/juice-shop:v20.1.1
     container_name: m10-web
     hostname: webapp
     profiles: ["module-10"]
+    # Bound to 127.0.0.1: this is a DELIBERATELY VULNERABLE application. On the
+    # short syntax ("3010:3000") Docker binds 0.0.0.0 and every device on the
+    # campus/cafe subnet can reach it. Students use it via localhost either way.
     ports:
-      - "3010:3000"
+      - "${LAB_BIND:-127.0.0.1}:3010:3000"
 
+# ======================================================================
+# NETWORKS — egress policy
+#
+# `internal: true` removes the NAT gateway, so containers on these networks can
+# talk to each other and to nothing else. No internet, and — the point of the
+# exercise — no route onto the campus LAN the host sits on. Without it, a student
+# at the m02 `[attacker] $` prompt has root, nmap, hydra and a live path to the
+# university's own network; scans would appear to originate from the lab PC.
+#
+# Nothing in these modules needs egress at runtime: every apt-get/pip runs at
+# BUILD time (in CI, not on the lab machine), m07's dnsmasq is `no-resolv`, and
+# every external host named in the LAB-GUIDEs is either historical ("what this
+# replaces") or an optional link the student's own browser opens.
+#
+# Both limits below were found by testing, not from the docs. Please don't
+# "tidy up" by adding `internal: true` to the remaining networks — each one
+# breaks a lab, and two of them break it SILENTLY.
+#
+# LIMIT 1 — `internal: true` silently discards published ports. A service with
+# `ports:` on an internal-only network comes up showing "3000/tcp" with no host
+# mapping, no warning from Compose, and is simply unreachable. So the
+# browser-facing services (m05, m06, m09, m10) are NOT on an internal network;
+# they are locked down with a 127.0.0.1 bind instead.
+#
+# LIMIT 2 — `internal: true` breaks routing BETWEEN two lab networks, which is
+# exactly what modules 07 and 11 are. Docker implements internal networks with:
+#     -A DOCKER-ISOLATION-STAGE-1 ! -s <subnet> -o <bridge> -j DROP
+# so a packet from m07-pc1 (10.1.1.2) heading out to the 10.1.2.0/24 bridge is
+# dropped — its source isn't in that bridge's subnet. Symptom: pc1 cannot ping
+# pc4, though the firewall container itself can reach both (it holds an address
+# on each). The lab looks up and is quietly useless. Hence m07-inside,
+# m07-outside, m11-office and m11-datacentre are deliberately NOT internal.
+#
+# Net effect: m02 (the Kali attacker box — the highest-risk container here) and
+# the single-station modules ARE isolated. m07/m11 nodes keep egress; they are
+# Debian + tcpdump/wireguard rather than a full attack toolkit, and they hold
+# NET_ADMIN by design, so any in-container egress block a student can simply undo
+# would be theatre. For those, the control belongs on the host. See SECURITY.md.
+# ======================================================================
 networks:
+  # Shared isolated net for the self-contained single-station modules that
+  # previously sat on the default bridge (and so had full internet egress).
+  lab-isolated:
+    name: lab-isolated
+    internal: true
+
+  # m11 and m07 are NOT internal — see the "cannot be isolated" note above.
   m11-office:
     name: m11-office
     ipam:
@@ -385,6 +458,7 @@ networks:
         - subnet: 10.11.1.0/24
   m02-net:
     name: m02-net
+    internal: true
     ipam:
       config:
         - subnet: 10.2.0.0/24
@@ -394,6 +468,7 @@ networks:
       config:
         - subnet: 10.1.1.0/24
   m07-outside:
+    # "outside" is the lab's simulated internet side, not the real one.
     name: m07-outside
     ipam:
       config:
