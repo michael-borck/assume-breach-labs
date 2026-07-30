@@ -228,8 +228,18 @@ teardown_prompt() {
     printf "\n"
     read -r -p "Shut down the lab machines before leaving? (y/N) " ans
     case "$ans" in
-        [Yy]*) ( cd "$PROJECT_ROOT" && docker compose stop ) >"$LOGFILE" 2>&1
-               printf "${C_OK}Lab stopped. Run ./start.sh to come back.${NC}\n" ;;
+        # The --profile flag is REQUIRED. Every service in docker-compose.yml
+        # belongs to a profile, and a bare `docker compose stop` does not select
+        # profiled services: it exits 0, prints nothing, and stops NOTHING. Since
+        # output goes to $LOGFILE, the student saw "Lab stopped." while containers
+        # (m02-attacker with root+NET_RAW, the m07/m11 nodes with NET_ADMIN) kept
+        # running — on a shared lab PC, across sessions. Verified on Compose v2.
+        [Yy]*) ( cd "$PROJECT_ROOT" && docker compose --profile "module-${MODULE_NO}" stop ) >"$LOGFILE" 2>&1
+               if docker ps -q --filter "name=^m${MODULE_NO}-" | grep -q .; then
+                   printf "${C_WARN}Some lab machines are still running. Use 'make down' to force them off.${NC}\n"
+               else
+                   printf "${C_OK}Lab stopped. Run ./start.sh to come back.${NC}\n"
+               fi ;;
         *)     printf "${C_DIM}Lab left running. ./start.sh to return, or 'make stop' to halt it.${NC}\n" ;;
     esac
 }

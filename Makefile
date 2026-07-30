@@ -5,6 +5,9 @@
 BASE_IMAGE ?= ghcr.io/michael-borck/assume-breach-base:latest
 COMPOSE    ?= docker compose
 
+# Profile-selecting flags for every module, for the whole-series targets below.
+ALL_PROFILES := $(foreach m,01 02 03 04 05 06 07 08 09 10 11,--profile module-$(m))
+
 help:
 	@echo "Assume Breach Labs"
 	@echo ""
@@ -68,11 +71,14 @@ m10:
 m11:
 	$(call RUN_MODULE,11)
 
+# Every service sits behind a profile, and a bare `docker compose stop` does NOT
+# select profiled services — it exits 0 and stops nothing. The profiles must be
+# named, the same way the `down` target below already does.
 stop:
-	$(COMPOSE) stop
+	$(COMPOSE) $(ALL_PROFILES) stop
 
 down:
-	$(COMPOSE) --profile module-01 --profile module-02 --profile module-03 --profile module-04 --profile module-05 --profile module-06 --profile module-07 --profile module-08 --profile module-09 --profile module-10 --profile module-11 down --remove-orphans
+	$(COMPOSE) $(ALL_PROFILES) down --remove-orphans
 
 status:
 	@echo "Assume Breach Labs — module availability:"
