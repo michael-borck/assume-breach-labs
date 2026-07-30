@@ -87,6 +87,69 @@ need_docker() {
 
 lab_is_up() { [ -n "$(docker ps -q --filter "name=${UP_CHECK}" 2>/dev/null)" ]; }
 
+# --- lab pack staleness ----------------------------------------------------
+# The MACHINES update themselves — bring_up pulls fresh images from GHCR every
+# launch. The PACK does not: docker-compose.yml, this script and VERSION are
+# whatever the student unzipped, and nothing here ever rewrites them.
+#
+# That gap is easy to miss because a stale folder looks perfectly healthy: new
+# images, old settings. The settings are where the safety lives — which
+# interface the lab ports bind to, whether the module-06 GUI asks for a
+# password, whether the attacker machine can reach the outside world. A student
+# on an old folder gets none of that and sees nothing wrong.
+#
+# So: fetch the published VERSION and say something. Deliberately toothless —
+# it reads one public file, changes nothing on disk, and stays silent unless it
+# is sure. Offline, proxied, or GitHub blocked all end the same way: no warning.
+# Set LAB_NO_UPDATE_CHECK=1 to skip the request entirely.
+VERSION_URL="https://raw.githubusercontent.com/michael-borck/assume-breach-labs/main/VERSION"
+
+start_version_check() {
+    [ -z "${LAB_NO_UPDATE_CHECK:-}" ] || return 0
+    REMOTE_VERSION_FILE="$(mktemp -t lab-version.XXXXXX)"
+    # Backgrounded so it overlaps the image pull and costs no startup time.
+    (
+        # Short connect timeout as well as a total one: a campus proxy that
+        # blackholes the request (drops it rather than refusing) would otherwise
+        # burn the whole budget, and this runs against the clock of the image
+        # pull it overlaps.
+        if command -v curl >/dev/null 2>&1; then
+            curl -fsS --connect-timeout 2 --max-time 4 "$VERSION_URL"
+        elif command -v wget >/dev/null 2>&1; then
+            wget -qO- --timeout=2 --tries=1 "$VERSION_URL"
+        fi
+    ) >"$REMOTE_VERSION_FILE" 2>/dev/null &
+    VERSION_CHECK_PID=$!
+}
+
+report_if_stale() {
+    [ -n "${VERSION_CHECK_PID:-}" ] || return 0
+    wait "$VERSION_CHECK_PID" 2>/dev/null
+    local remote; remote="$(head -1 "$REMOTE_VERSION_FILE" 2>/dev/null | tr -d '\r')"
+    rm -f "$REMOTE_VERSION_FILE"
+
+    # Only trust something shaped like our YYYY.MM.DD stamp. Anything else —
+    # empty, an error page, a captive portal — means stay quiet.
+    case "$remote" in
+        [0-9][0-9][0-9][0-9].[0-9][0-9].[0-9][0-9]) ;;
+        *) return 0 ;;
+    esac
+
+    # No VERSION file at all predates the stamp, so it is always behind. Otherwise
+    # compare: the fields are fixed-width and zero-padded, so sorting as plain
+    # text orders these correctly. A LOCAL version ahead of the published one is
+    # someone working on the repo — not stale, no warning.
+    if [ "$LAB_VERSION" != "unknown" ]; then
+        [ "$LAB_VERSION" != "$remote" ] || return 0
+        [ "$(printf '%s\n%s\n' "$LAB_VERSION" "$remote" | sort | head -1)" = "$LAB_VERSION" ] || return 0
+    fi
+
+    printf "\n${C_WARN}  Heads up: this lab pack is out of date${NC}"
+    printf "${C_DIM} (yours %s, current %s)${NC}\n" "$LAB_VERSION" "$remote"
+    printf "${C_DIM}  The lab machines update themselves, but the lab's SETTINGS do not —\n"
+    printf "  they come from this folder. Download the current pack and run that one.${NC}\n"
+}
+
 # Pull the published images (all are public on GHCR), falling back to a local
 # build only if the pull fails, then start without --build to avoid the legacy
 # builder racing when several services share one image tag. Dots while it works.
@@ -296,12 +359,14 @@ if [ "${CODESPACES:-}" = "true" ] && [ -n "${BROWSER_URL:-}" ]; then
     BROWSER_URL="https://${CODESPACE_NAME}-${_port}.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:-app.github.dev}"
 fi
 
+start_version_check   # backgrounded; result is read after the lab is up
 banner
 need_docker
 if [ -z "$ANALYST" ] && [ -t 0 ]; then
     read -r -p "Enter your name (for the lab session): " ANALYST
 fi
 bring_up
+report_if_stale
 if [ -n "${SHELL_HOST:-}" ]; then
     enter_shell "$SHELL_HOST"
 else
