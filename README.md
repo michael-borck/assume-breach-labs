@@ -85,6 +85,23 @@ make build-base      # builds base.Dockerfile, tags it as the GHCR image name
 > that break BuildKit's context transfer (`failed to xattr … operation not permitted`). If a
 > local build fails that way, use the legacy builder: `DOCKER_BUILDKIT=0 make build-base`.
 
+## Security
+
+These containers are **deliberately vulnerable and deliberately over-privileged** — that is the
+curriculum. Run them on a machine you control, not on anything reachable from a network you don't own.
+
+**[SECURITY.md](SECURITY.md)** covers what is intentional (the weak hashes, the raised capabilities,
+the broken certificates), what hardening is in place (localhost-only ports, network isolation for the
+attacker machine, an authenticated module 06 GUI), and — stated plainly — what none of it fixes.
+
+If you are running these for a class, set your own credentials for the module 06 browser GUI rather
+than using the published defaults. Create a `.env` next to this file (it is git-ignored):
+
+```
+LAB_GUI_USER=your-user
+LAB_GUI_PASSWORD=your-password
+```
+
 ## Data & portability
 
 The shipped labs use **no host bind mounts**, so they run identically on macOS, Windows, and Linux —

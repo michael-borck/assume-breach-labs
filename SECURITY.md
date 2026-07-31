@@ -52,7 +52,18 @@ Committed on purpose; secret scanners will flag them indefinitely.
 - **`m09`** — deliberately broken TLS certificates (expired, self-signed, wrong
   hostname), regenerated at every start so "expired" is genuinely expired.
 - **`m06`** — the browser GUI's default credentials (`analyst` / `labpass`).
-  Documented, not secret. Override with `LAB_GUI_USER` / `LAB_GUI_PASSWORD`.
+  Documented, not secret — anyone reading this repo knows them. Anyone running the
+  labs for a group should override them with a `.env` beside `docker-compose.yml`
+  (git-ignored, picked up automatically):
+
+  ```
+  LAB_GUI_USER=your-user
+  LAB_GUI_PASSWORD=your-password
+  ```
+
+  This matters most where `127.0.0.1` is not a boundary: several accounts on one
+  machine, RDP, or a shared server, since any local user can reach a
+  localhost-bound port.
 
 ### Vulnerable applications
 
