@@ -573,6 +573,27 @@ CONTAINER_ENGINE=podman LAB_MODULE=11 ./start.sh   # then verify the WireGuard t
 CONTAINER_ENGINE=podman LAB_MODULE=02 ./start.sh   # then: nmap a target (SYN scan)
 ```
 
+`CONTAINER_ENGINE` is honoured by both entry points — `./start.sh` and `make`:
+
+```bash
+make m07 CONTAINER_ENGINE=podman
+```
+
+There is **one set of labs**, not a Docker copy and a Podman copy. `docker-compose.yml`
+is an engine-neutral spec, so only the command changes: `docker compose` becomes
+`podman compose`, falling back to `podman-compose` if this Podman predates its built-in
+compose support (4.7). Nothing in the compose file is Docker-specific.
+
+If you'd rather drive Podman with the real Compose binary — highest fidelity, since
+`podman compose` and `podman-compose` each have gaps — expose Podman's
+Docker-compatible socket and point Compose at it instead:
+
+```bash
+systemctl --user enable --now podman.socket
+export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/podman/podman.sock"
+./start.sh          # plain `docker compose`, but Podman is doing the work
+```
+
 ---
 
 ## Part G — Load testing

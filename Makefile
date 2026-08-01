@@ -3,7 +3,13 @@
 # Shared toolbox image. Default is the prebuilt GHCR image (just pull it).
 # Override to build locally: `make build-base`.
 BASE_IMAGE ?= ghcr.io/michael-borck/assume-breach-base:latest
-COMPOSE    ?= docker compose
+# Container engine. Docker by default; CONTAINER_ENGINE=podman runs the labs under
+# Podman instead. The compose file is engine-neutral, so this is the only thing that
+# changes — there is one set of labs, not two. See docs/SERVER-DEPLOYMENT.md Part F.
+#   make m07 CONTAINER_ENGINE=podman
+ENGINE     ?= $(CONTAINER_ENGINE)
+ENGINE     := $(if $(ENGINE),$(ENGINE),docker)
+COMPOSE    ?= $(ENGINE) compose
 
 # Profile-selecting flags for every module, for the whole-series targets below.
 ALL_PROFILES := $(foreach m,01 02 03 04 05 06 07 08 09 10 11,--profile module-$(m))
@@ -22,10 +28,10 @@ help:
 	@echo "  DOCKER_BUILDKIT=0 make build-base"
 
 pull-base:
-	docker pull $(BASE_IMAGE)
+	$(ENGINE) pull $(BASE_IMAGE)
 
 build-base:
-	docker build -f base.Dockerfile -t $(BASE_IMAGE) .
+	$(ENGINE) build -f base.Dockerfile -t $(BASE_IMAGE) .
 
 # Regenerate the per-module network-map SVGs from docker-compose (docs/diagrams/)
 netmaps:
