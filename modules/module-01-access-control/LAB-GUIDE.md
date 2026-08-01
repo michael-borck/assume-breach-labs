@@ -130,12 +130,49 @@ sudo -u carlos cat salaries.csv
 ## Phase 5: Isolation (a thinking exercise)
 
 You did all of this inside a container — an isolated Linux environment. The container is itself an
-access-control boundary: what runs inside it can't see the rest of your computer.
+access-control boundary: by default, what runs inside it can't see the rest of your computer.
 
 > **Q7.** You have **two** layers of protection in play: the container isolates this whole system from
 > your real machine, and *within* it, file permissions isolate users from each other. Give one real
 > example of each kind of boundary in an organisation (one that separates whole systems, one that
 > separates people within a system).
+
+---
+
+## Phase 6: The boundary you're standing on
+
+Notice the words **by default** in Phase 5. They're doing a lot of work, and this last phase is about
+why.
+
+The container boundary protects your computer *from the lab*. It does not work in the other
+direction. A container runtime like Docker builds containers as **root**, and it will attach parts of
+the host's filesystem to a container if it's asked to. That's not a flaw — it's the whole point, and
+it's how this lab gets its files.
+
+Follow that through. If the runtime does what it's asked, and it runs as root, then **anyone allowed
+to start containers on a machine can reach that machine's files as root** — regardless of how limited
+their own login account is. Permission to run containers is, in practice, administrative access to
+that computer. Docker documents this itself.
+
+On your own laptop you'll never notice, because you're already the administrator there. It becomes
+real the moment you're *not* the only person using the machine.
+
+You just spent an entire lab on this exact question from the other side. You made rico's access
+narrow not because he *couldn't* find a way around it, but because narrow access was the correct
+arrangement. Least privilege is a decision about what people **should** have — and it only means
+anything when somebody could have taken more and chose not to.
+
+That's the distinction this whole field rests on: **being able to do something is not the same as
+being allowed to do it.** Every technique in this unit will hand you a capability that exceeds your
+authorisation somewhere. The skill being assessed is knowing where the line is; the professional
+obligation is staying behind it. On a shared or institutional machine, going past it isn't a clever
+trick — it's a misuse of resources you were trusted with, and it's treated as one.
+
+> **Q8.** This lab gave you a capability that goes beyond what your account on this computer is
+> nominally allowed. **(a)** In your own words, why does being able to run containers amount to
+> administrative access? **(b)** Describe one *other* situation — at work, at home, or online — where
+> someone routinely has a capability they're not authorised to use, and say what actually stops them.
+> Is it technical, or is it something else?
 
 ---
 
@@ -145,12 +182,13 @@ Type `exit` to leave (say `y` to shut the machine down). Your changes reset next
 
 ### Passport prompts (submit these)
 
-Collect **Q1–Q7** into your lab journal, with:
+Collect **Q1–Q8** into your lab journal, with:
 
 - What `-rw-r-----` means, broken down into owner/group/other.
 - The result of `sudo -u rico cat salaries.csv` before and after `chmod 644`, and why 644 was wrong.
 - How you gave jane access the *right* way, and proof rico still couldn't read it.
 - One sentence defining **least privilege** in your own words.
+- Your answer to Q8 — the difference between what you *can* do and what you're *authorised* to do.
 
 ---
 
