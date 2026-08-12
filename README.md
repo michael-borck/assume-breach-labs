@@ -1,11 +1,11 @@
 # Assume Breach — Labs
 
-> **Part of the [Assume-Breach series](https://michael-borck.github.io/security-labs/)** — five hands-on security labs, two companion books, and a game. Browse them all at the [series hub](https://github.com/michael-borck/security-labs).
+> **Part of the [Assume-Breach series](https://security.borck.education/)** — five hands-on security labs, two companion books, and a game. Browse them all at the [series hub](https://github.com/michael-borck/security-labs).
 
 A self-contained, Docker-based lab series for a first course in **defensive information
 security**.
 
-**▶ Student front door: https://michael-borck.github.io/assume-breach-labs/** Every exercise runs in containers — no virtual machine, no Windows image, and (with
+**▶ Student front door: https://assumebreach.borck.education/** Every exercise runs in containers — no virtual machine, no Windows image, and (with
 one small exception) no dependence on external websites. The practical companion to the
 *Assume Breach* book.
 
