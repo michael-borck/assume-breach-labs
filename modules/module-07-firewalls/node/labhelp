@@ -26,6 +26,13 @@ cat <<EOF
       DROP   -> ping just times out (100% loss, no reply at all)
       REJECT -> ping says "Destination Host Unreachable" (an active refusal)
 
+  WRITE YOUR OWN RULE (Phase 4 — the real defender skill):
+    pc1 runs a real SSH service on tcp/22. See it:  ssh pc1  then  ss -tlnp
+    Policy: block pc2 -> pc1:22, keep pc3/pc4 and all ping working.
+    Write the FORWARD rule yourself:
+      iptables -A FORWARD -p tcp --dport 22 -s <src> -d <dst> -j DROP
+    Test with  ssh pc1  (not ping) from pc2 and pc3, and re-check ping.
+
   NAME LOOKUP (DNS)     ssh pc1   then:  getent hosts coke.dreamland.com.au
 
   Type  netmap  for the network diagram.

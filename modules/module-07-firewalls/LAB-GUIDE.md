@@ -148,7 +148,73 @@ Reset to the taught ruleset when you're done (on the firewall):
 
 ---
 
-## Phase 4: Reaching a machine by name (DNS)
+## Phase 4: Write your own rule
+
+So far you've *run* rules that were written for you. Now you write one from a requirement — which is
+what defending a real network actually is, and the hardest, most useful thing in this module. Nobody
+hands you the command; they hand you a policy and you turn it into iptables.
+
+**First, know what you're protecting.** `pc1` runs a real service — an SSH server on **tcp/22** — and
+right now any outside machine can reach it. Confirm that before you change anything. Hop to `pc1` and
+look at what is listening and which process owns it:
+
+```bash
+ssh pc1
+ss -tlnp             # what is listening, on which port, owned by which process
+ps -ef | grep sshd   # the process behind port 22
+exit
+```
+
+`ss -tlnp` is the defender's "what is this machine exposing?" — you'll see `sshd` bound to `:22`.
+`ps` tells you the process behind it. These two answer "what is running, and what is it listening
+for?" — the first questions you ask about any box you're responsible for.
+
+Now confirm the exposure is real. From an outside machine, connect to `pc1`'s SSH service:
+
+```bash
+ssh pc2
+ssh pc1              # it connects (you land on pc1) — prove it, then: exit
+exit                 # ...back to pc2, then exit again to the firewall
+```
+
+> **The policy you must enforce:** *`pc2` must not be able to reach `pc1`'s SSH service. `pc3` and
+> `pc4` must still reach it, and every machine's `ping` to `pc1` must keep working.*
+
+Write the FORWARD rule yourself, on the firewall. You have the pieces from the earlier phases and the
+command reference:
+
+- match TCP, not ICMP, this time: `-p tcp --dport 22`
+- match the one source and destination the policy names (`pc2` is `10.1.2.3`, `pc1` is `10.1.1.2`)
+- choose an action, and choose **where in the list** it has to go so the catch-all `ACCEPT` doesn't
+  reach it first
+
+> **Q7.** Write down the exact `iptables` command you used, and one sentence on **why you placed it
+> where you did** in the FORWARD list.
+
+**Now prove it does exactly what the policy said — no more, no less.** A rule that blocks `pc2` is
+only half right; a rule that also breaks `pc3`, or kills `ping`, has failed the requirement:
+
+```bash
+ssh pc2      then:  ssh pc1     -> should now FAIL / hang;    ping -c3 pc1  -> should still WORK
+ssh pc3      then:  ssh pc1     -> should still WORK;         ping -c3 pc1  -> should still WORK
+```
+
+(Reach each workstation with `ssh pc2` from the firewall, run the two tests, `exit` back.)
+
+> **Q8.** Record the four results above. If any is wrong, your rule is too broad or too narrow — fix
+> it and re-test. When all four are right, paste your final `iptables -L FORWARD -n -v
+> --line-numbers`.
+
+> **Q9.** The firewall itself can still `ssh pc1` even though your rule blocks SSH to `pc1`. Why?
+> (Hint: the firewall is *directly connected* to `pc1` — its management traffic never crosses the
+> FORWARD chain. This is the difference between filtering at the **perimeter** and filtering **on the
+> host**, and it decides where a given control has to live.)
+
+Reset when you're done (on the firewall): `/rules/rules.sh`.
+
+---
+
+## Phase 5: Reaching a machine by name (DNS)
 
 Machines are easier to reach by name than by number. The lab has a name server (`dns`, 10.1.1.253),
 and `pc1` is configured to use it. Hop to `pc1` and look a name up:
@@ -161,13 +227,13 @@ exit
 
 It resolves to `10.1.2.5` — that's `pc4`.
 
-> **Q7.** What address did `coke.dreamland.com.au` resolve to? Two separate things had to work for
+> **Q10.** What address did `coke.dreamland.com.au` resolve to? Two separate things had to work for
 > that to be useful — name resolution, and then the firewall allowing the traffic. Explain both in a
 > sentence.
 
 ---
 
-## Phase 5: Subnetting (a thinking exercise, no commands needed)
+## Phase 6: Subnetting (a thinking exercise, no commands needed)
 
 Two machines can talk directly only if they're on the **same subnet**. The subnet is decided by the
 network mask.
@@ -176,7 +242,7 @@ network mask.
   means the first three numbers (`10.1.2`) are the *network*; only the last number identifies the
   machine. Same network → they're on the same subnet.
 
-> **Q8.** Consider `10.1.2.5` and `10.1.2.130`.
+> **Q11.** Consider `10.1.2.5` and `10.1.2.130`.
 > (a) Under a `/24` mask, are they on the same subnet? (b) Under a `/25` mask (which splits
 > `10.1.2.0` into `.0–.127` and `.128–.255`), are they still on the same subnet? Explain each answer.
 
@@ -189,11 +255,18 @@ unless you're coming straight back. Your changes reset next time you start.
 
 ### Passport prompts (submit these)
 
-Collect **Q1–Q8** into your lab journal, with:
+Collect **Q1–Q11** into your lab journal, with:
 
 - The three ping results from Phase 2 (DROP vs REJECT vs ACCEPT) side by side.
 - A copy of `iptables -L FORWARD -n -v --line-numbers` after Phase 3 (with the reordered rules).
+- **The rule you wrote in Phase 4**, the four test results that prove it meets the policy, and your
+  final rule list.
 - Your one-line definitions of **ICMP**, **DROP**, and **REJECT**.
+
+> **Phase 4 is the skill to over-practise.** Turning a stated policy into a correct, minimal firewall
+> rule — and proving it blocks what it must without breaking what it mustn't — is what a defender
+> does for real. If it felt hard, clear the ruleset (`iptables -F FORWARD`) and do it again from
+> blank until writing the rule and testing it is automatic.
 
 ---
 
@@ -208,8 +281,11 @@ Everything is real tools on real machines. On the **firewall** you manage the ru
 | firewall | Load the teaching ruleset | `/rules/rules.sh` |
 | firewall | Clear all rules (allow all) | `iptables -F FORWARD` |
 | firewall | Insert a rule at position N | `iptables -I FORWARD 2 -p icmp -s 10.1.2.4 -d 10.1.1.2 -j ACCEPT` |
+| firewall | Append a TCP-port rule (Phase 4) | `iptables -A FORWARD -p tcp --dport 22 -s <src> -d <dst> -j DROP` |
 | firewall | Hop to a workstation | `ssh pc2` (then `exit` to return) |
 | workstation | Ping across the firewall | `ping -c3 pc1` |
+| workstation | Test a TCP service across the firewall | `ssh pc1` (Phase 4) |
+| pc1 | See what is listening, and the process | `ss -tlnp` · `ps -ef \| grep sshd` |
 | pc1 | Look a name up (DNS) | `getent hosts coke.dreamland.com.au` |
 
 The firewall ruleset (`rules/rules.sh`) in full:

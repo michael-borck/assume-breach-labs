@@ -27,9 +27,14 @@ You don't need to know Docker. Install Docker Desktop (see
 
 (On Windows: install [Git for Windows](https://git-scm.com/download/win) once, then double-click `start.bat`.)
 
-That "logs you in" to an immersive lab console — the machines power on and you drive the whole lab
-with plain commands like `ping pc2 pc1` and `rules load`. No `docker` typing. Follow the module's
-`LAB-GUIDE.md`. Type `quit` to leave.
+That "logs you in" to the lab console — the machines power on, and shell-based modules drop you
+straight into a real Linux shell on the lab machine (your prompt becomes e.g. `root@firewall`).
+Browser-based modules (05, 06, 09, 10) give a small `lab>` menu instead — `open` launches the
+module's page, `map` shows the network, `connect <host>` hops onto a machine. No `docker` typing
+either way. Follow the module's `LAB-GUIDE.md`. Type `exit` (or `quit` at the `lab>` prompt) to leave.
+
+> **First time at a Linux command line?** Read **[`LINUX-BASICS.md`](LINUX-BASICS.md)** — the
+> absolute minimum the shell-based modules assume (about twenty commands), on one page.
 
 > **Choosing a module:** `./start.sh` opens Module 07 by default. Pick another with
 > `LAB_MODULE=07 ./start.sh`. Instructors can also use the Makefile directly (`make m07`,
