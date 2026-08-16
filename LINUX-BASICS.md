@@ -8,6 +8,11 @@ the terminal.
 > **Do you even need this yet?** Modules **05, 06, 09 and 10** run in your web browser — the
 > console just opens the right page for you. Modules **01, 02, 03, 04, 07, 08 and 11** put you
 > at a Linux prompt. That's where this page matters.
+>
+> **Two things this page deliberately does not cover, because they get their own lab:** writing
+> **firewall rules** with `iptables` (module 07) and the **security tools** like `nmap` and John the
+> Ripper (modules 02, 03). This page is the everyday shell those labs sit on top of — revise the
+> relevant lab for the tool itself.
 
 ## Reading the prompt
 
@@ -51,6 +56,7 @@ feature — so you spell out the `./`.
 cat message.asc      # print the whole file at once — fine for short files
 less /var/log/syslog # page through a long file
 man nmap             # read a command's manual (opens in less)
+sha256sum report.pdf # the file's unique fingerprint — a long "hash" that changes if one byte changes
 ```
 
 Inside `less` (and `man`): **space** or arrow keys to move, **`/text`** then Enter to search,
@@ -137,11 +143,13 @@ comes straight back on its own — no `exit` needed.
 
 ```
 ps aux                # every process; pipe into grep to find one
+ps -ef                # the same thing, a different spelling — some guides use this one
 ss -tlnp              # TCP ports something is listening on, and which process owns them
 ```
 
-These two are how a defender asks a machine "what are you actually doing right now?" — you'll
-want them any time a lab makes you suspicious of a box.
+These are how a defender asks a machine "what are you actually doing right now?" — you'll
+want them any time a lab makes you suspicious of a box. (`ps aux` and `ps -ef` list the same
+processes in slightly different columns; use whichever a worksheet shows.)
 
 ## Practice before (or between) labs
 
@@ -159,6 +167,7 @@ you might need, so it doubles as a guided tour.
 | `cd dir` / `cd ..` / `cd` | enter a directory / go up / go home |
 | `cat file` | print a whole file |
 | `less file` | page through a file (`q` quits, `/` searches) |
+| `sha256sum file` | print the file's fingerprint (checksum / hash) |
 | `man cmd` | manual for a command (`q` quits) |
 | `nano file` | edit a file (Ctrl-O save, Ctrl-X exit) |
 | `mkdir` / `cp` / `mv` / `rm` | make dir / copy / move-rename / delete |
@@ -171,7 +180,7 @@ you might need, so it doubles as a guided tour.
 | `"$(cmd)"` | use a command's output as an argument |
 | `sudo cmd` / `sudo -u user cmd` | run as root / as another user |
 | `ssh host` / `ssh host 'cmd'` | log in remotely / run one remote command |
-| `ps aux` | list running processes |
+| `ps aux` / `ps -ef` | list running processes (two spellings) |
 | `ss -tlnp` | list listening ports |
 | `exit` | leave this shell or ssh session |
 | **Tab** / **↑** / **Ctrl-C** | autocomplete / previous command / stop |

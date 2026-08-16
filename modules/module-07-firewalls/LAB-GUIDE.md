@@ -180,13 +180,17 @@ exit                 # ...back to pc2, then exit again to the firewall
 > **The policy you must enforce:** *`pc2` must not be able to reach `pc1`'s SSH service. `pc3` and
 > `pc4` must still reach it, and every machine's `ping` to `pc1` must keep working.*
 
+The taught ruleset from Phase 3 is still loaded, so your FORWARD list still ends in a catch-all
+`-A FORWARD -j ACCEPT` that lets everything through. That matters for where your new rule goes.
+
 Write the FORWARD rule yourself, on the firewall. You have the pieces from the earlier phases and the
 command reference:
 
 - match TCP, not ICMP, this time: `-p tcp --dport 22`
 - match the one source and destination the policy names (`pc2` is `10.1.2.3`, `pc1` is `10.1.1.2`)
-- choose an action, and choose **where in the list** it has to go so the catch-all `ACCEPT` doesn't
-  reach it first
+- pick an action (`-j DROP`), and — because rules are read top to bottom and the catch-all `ACCEPT`
+  is at the bottom — **`-I`nsert** your rule *above* that ACCEPT (as you did in Phase 3), not `-A`ppend
+  it after. A rule appended below the ACCEPT is never reached and does nothing.
 
 > **Q7.** Write down the exact `iptables` command you used, and one sentence on **why you placed it
 > where you did** in the FORWARD list.
@@ -281,7 +285,7 @@ Everything is real tools on real machines. On the **firewall** you manage the ru
 | firewall | Load the teaching ruleset | `/rules/rules.sh` |
 | firewall | Clear all rules (allow all) | `iptables -F FORWARD` |
 | firewall | Insert a rule at position N | `iptables -I FORWARD 2 -p icmp -s 10.1.2.4 -d 10.1.1.2 -j ACCEPT` |
-| firewall | Append a TCP-port rule (Phase 4) | `iptables -A FORWARD -p tcp --dport 22 -s <src> -d <dst> -j DROP` |
+| firewall | Insert a TCP-port rule above the catch-all (Phase 4) | `iptables -I FORWARD <n> -p tcp --dport 22 -s <src> -d <dst> -j DROP` |
 | firewall | Hop to a workstation | `ssh pc2` (then `exit` to return) |
 | workstation | Ping across the firewall | `ping -c3 pc1` |
 | workstation | Test a TCP service across the firewall | `ssh pc1` (Phase 4) |
