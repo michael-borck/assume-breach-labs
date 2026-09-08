@@ -22,12 +22,15 @@ encrypt.
 ```
 
 Pick module `06`. When it's up, type `open` (or go to **http://localhost:3006**) to open Wireshark in
-your browser. The captures are in **`/pcaps`** — in Wireshark use **File ▸ Open** and type
-`/pcaps/` to see them:
+your browser. **The browser will ask you to sign in**: use **`analyst`** / **`labpass`** (sites can
+change these with the `LAB_GUI_USER` and `LAB_GUI_PASSWORD` settings). The captures are in
+**`/pcaps`** — in Wireshark use **File ▸ Open**; the dialog starts in a home folder, so press
+**Ctrl+L** (or click **File System** in the sidebar) and type **`/pcaps/`** to see them:
 
 | File | What it holds |
 |------|---------------|
 | `ftp-login.pcap` | a cleartext FTP login |
+| `http-login.pcap` | a plaintext web (HTTP) form login |
 | `telnet-login.pcap` | a telnet login — one failed attempt, then success |
 | `http-browse.pcap` | a plain HTTP page fetch |
 | `dns-query.pcap` | a DNS name lookup |
@@ -51,6 +54,17 @@ exchange as plain text.
 
 > **Q2.** FTP sent that password across the network in readable text. Name the encrypted protocol you
 > would use instead so the password *couldn't* be read this way.
+
+## Phase 1b: The web login (HTTP)
+
+Open `/pcaps/http-login.pcap`. This is the same idea one layer up: someone logging in to a website
+over plain HTTP. Find the `POST /login` packet in the Info column.
+
+> **Q2b.** Follow the TCP stream. What username and password were submitted, and in which line of
+> the request did they travel? (This is exactly what "login over plain HTTP" means on the wire.)
+
+> **Q2c.** The server answered with a `302` redirect and handed back a **session cookie**. Why does
+> the cookie matter for eavesdropping, even if the password had been strong?
 
 ---
 
@@ -120,7 +134,7 @@ Close the browser tab and type `quit` in the console (say `y` to shut the machin
 
 ### Passport prompts (submit these)
 
-Collect **Q1–Q8** into your lab journal, with:
+Collect **Q1–Q8, including Q2b and Q2c**, into your lab journal, with:
 
 - The FTP username and password you recovered, and the encrypted protocol you'd use instead.
 - The telnet story: the failed password, the error, and the one that worked.

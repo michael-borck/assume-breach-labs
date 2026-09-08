@@ -181,6 +181,11 @@ services:
     environment:
       CUSTOM_USER: "${LAB_GUI_USER:-analyst}"
       PASSWORD: "${LAB_GUI_PASSWORD:-labpass}"
+    volumes:
+      # Bind-mount the teaching captures: the repo folder is the source of truth,
+      # so a new pcap appears on the next `start.sh` without an image rebuild or
+      # a registry pull (a stale ghcr tag briefly hid new captures this way).
+      - ./modules/module-06-packet-capture/wireshark/pcaps:/pcaps
     ports:
       - "${LAB_BIND:-127.0.0.1}:3006:3000"
 
