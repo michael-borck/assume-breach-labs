@@ -6,6 +6,21 @@
 set -euo pipefail
 mkdir -p "$HOME/.pi/agent"
 
+if ! command -v pi >/dev/null 2>&1; then
+  echo "NOTE: Pi is not installed yet. The settings file will still be written."
+  echo "  1. Install Node.js LTS from https://nodejs.org (next, next, finish)"
+  echo "  2. npm install -g @earendil-works/pi-coding-agent"
+  echo "  3. Check with: pi --version"
+  echo
+fi
+
+if ! command -v ollama >/dev/null 2>&1; then
+  echo "NOTE: Ollama is not installed or not running. The local provider will not"
+  echo "  respond until you install it (https://ollama.com) and start the app."
+  echo "  The shared server (if you paste the key below) works regardless."
+  echo
+fi
+
 KEY=""
 read -r -p "Paste the shared-server key from the LMS announcement (Enter to skip): " KEY || true
 

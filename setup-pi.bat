@@ -7,6 +7,21 @@ setlocal
 set "DIR=%USERPROFILE%\.pi\agent"
 if not exist "%DIR%" mkdir "%DIR%"
 set "F=%DIR%\models.json"
+where pi >nul 2>nul
+if errorlevel 1 (
+  echo NOTE: Pi is not installed yet. The settings file will still be written.
+  echo   1. Install Node.js LTS from https://nodejs.org ^(next, next, finish^)
+  echo   2. npm install -g @earendil-works/pi-coding-agent
+  echo   3. Check with: pi --version
+  echo.
+)
+where ollama >nul 2>nul
+if errorlevel 1 (
+  echo NOTE: Ollama is not installed or not running. The local provider will not
+  echo   respond until you install it from https://ollama.com and start the app.
+  echo   The shared server ^(if you paste the key below^) works regardless.
+  echo.
+)
 set "KEY="
 set /p KEY=Paste the shared-server key from the LMS announcement (or press Enter to skip):
 if "%KEY%"=="" goto localonly
