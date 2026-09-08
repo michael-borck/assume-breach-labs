@@ -31,6 +31,7 @@ change these with the `LAB_GUI_USER` and `LAB_GUI_PASSWORD` settings). The captu
 |------|---------------|
 | `ftp-login.pcap` | a cleartext FTP login |
 | `http-login.pcap` | a plaintext web (HTTP) form login |
+| `https-login.pcap` | the same web login, over TLS: ciphertext |
 | `telnet-login.pcap` | a telnet login — one failed attempt, then success |
 | `http-browse.pcap` | a plain HTTP page fetch |
 | `dns-query.pcap` | a DNS name lookup |
@@ -85,7 +86,10 @@ Open `/pcaps/telnet-login.pcap`, right-click a packet, and **Follow ▸ TCP Stre
 Open `/pcaps/http-browse.pcap`.
 
 > **Q5.** What page did the browser request (the `GET` line), and what server software answered? Would
-> an eavesdropper be able to read the page contents here? What changes with **HTTPS**?
+> an eavesdropper be able to read the page contents here? What changes with **HTTPS**? Answer it with
+> evidence: open `/pcaps/https-login.pcap` (the Phase 1b login, now over TLS). The conversation is the
+> same shape, but the payload is unreadable **Application Data**; the only thing still visible is the
+> server's name in the ClientHello.
 
 Open `/pcaps/dns-query.pcap`.
 
