@@ -154,6 +154,19 @@ So far you've *run* rules that were written for you. Now you write one from a re
 what defending a real network actually is, and the hardest, most useful thing in this module. Nobody
 hands you the command; they hand you a policy and you turn it into iptables.
 
+**Start Phase 4 with a new baseline.** On the lab firewall, remove the earlier
+ICMP restrictions and leave a single catch-all ACCEPT rule:
+
+```bash
+iptables -F FORWARD
+iptables -A FORWARD -j ACCEPT
+iptables -L FORWARD -n -v --line-numbers
+```
+
+The list should now contain one rule: ACCEPT at position 1. This allows all
+forwarded traffic, including ping, before you add your SSH restriction. This
+reset is for the isolated teaching lab, not a production firewall.
+
 **First, know what you're protecting.** `pc1` runs a real service — an SSH server on **tcp/22** — and
 right now any outside machine can reach it. Confirm that before you change anything. Hop to `pc1` and
 look at what is listening and which process owns it:
@@ -173,15 +186,19 @@ Now confirm the exposure is real. From an outside machine, connect to `pc1`'s SS
 
 ```bash
 ssh pc2
-ssh pc1              # it connects (you land on pc1) — prove it, then: exit
-exit                 # ...back to pc2, then exit again to the firewall
+hostname             # must print pc2
+ssh pc1 hostname     # prints pc1, then returns automatically to pc2
+hostname             # confirms you are still on pc2
+exit                 # return to the firewall
+hostname             # must print firewall
 ```
 
 > **The policy you must enforce:** *`pc2` must not be able to reach `pc1`'s SSH service. `pc3` and
 > `pc4` must still reach it, and every machine's `ping` to `pc1` must keep working.*
 
-The taught ruleset from Phase 3 is still loaded, so your FORWARD list still ends in a catch-all
-`-A FORWARD -j ACCEPT` that lets everything through. That matters for where your new rule goes.
+The Phase 4 baseline has a catch-all `-A FORWARD -j ACCEPT` that lets everything
+through. Your new rule must go before it. The earlier ICMP DROP and REJECT
+rules have been removed so they cannot interfere with this phase's ping tests.
 
 Write the FORWARD rule yourself, on the firewall. You have the pieces from the earlier phases and the
 command reference:
@@ -195,18 +212,38 @@ command reference:
 > **Q7.** Write down the exact `iptables` command you used, and one sentence on **why you placed it
 > where you did** in the FORWARD list.
 
-**Now prove it does exactly what the policy said — no more, no less.** A rule that blocks `pc2` is
-only half right; a rule that also breaks `pc3`, or kills `ping`, has failed the requirement:
+**Now test the whole policy.** A rule that blocks `pc2` is only half right;
+one that also breaks `pc3` or `pc4`, or kills ping, has failed the requirement.
+Start on the firewall and run these commands one at a time:
 
 ```bash
-ssh pc2      then:  ssh pc1     -> should now FAIL / hang;    ping -c3 pc1  -> should still WORK
-ssh pc3      then:  ssh pc1     -> should still WORK;         ping -c3 pc1  -> should still WORK
+ssh pc2
+hostname             # must print pc2
+ssh -o ConnectTimeout=5 pc1 hostname  # should time out
+ping -c3 pc1         # should work
+exit                 # return to the firewall
+
+ssh pc3
+hostname             # must print pc3
+ssh -o ConnectTimeout=5 pc1 hostname  # should print pc1
+ping -c3 pc1         # should work
+exit                 # return to the firewall
+
+ssh pc4
+hostname             # must print pc4
+ssh -o ConnectTimeout=5 pc1 hostname  # should print pc1
+ping -c3 pc1         # should work
+exit                 # return to the firewall
+hostname             # must print firewall
 ```
 
-(Reach each workstation with `ssh pc2` from the firewall, run the two tests, `exit` back.)
+`ssh pc1 hostname` runs one command remotely and returns automatically. It
+does not leave you in an interactive shell on pc1, so the ping test still
+originates from the workstation named by the preceding hostname check.
 
-> **Q8.** Record the four results above. If any is wrong, your rule is too broad or too narrow — fix
-> it and re-test. When all four are right, paste your final `iptables -L FORWARD -n -v
+> **Q8.** Record the six results above. If any differs from the expected result,
+> check the originating host, rules and routing, then re-test. When all six
+> are right, paste your final `iptables -L FORWARD -n -v
 > --line-numbers`.
 
 > **Q9.** The firewall itself can still `ssh pc1` even though your rule blocks SSH to `pc1`. Why?

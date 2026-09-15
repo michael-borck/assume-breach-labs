@@ -29,9 +29,19 @@ cat <<EOF
   WRITE YOUR OWN RULE (Phase 4 — the real defender skill):
     pc1 runs a real SSH service on tcp/22. See it:  ssh pc1  then  ss -tlnp
     Policy: block pc2 -> pc1:22, keep pc3/pc4 and all ping working.
-    Write the FORWARD rule yourself:
-      iptables -A FORWARD -p tcp --dport 22 -s <src> -d <dst> -j DROP
-    Test with  ssh pc1  (not ping) from pc2 and pc3, and re-check ping.
+    First reset on the LAB FIREWALL ONLY (removes the earlier ICMP rules):
+      iptables -F FORWARD
+      iptables -A FORWARD -j ACCEPT
+      iptables -L FORWARD -n -v --line-numbers
+    The catch-all ACCEPT is now rule 1. Insert your rule BEFORE it:
+      iptables -I FORWARD <position> -p tcp --dport 22 -s <src> -d <dst> -j DROP
+    Choose the position from the list; appending with -A after ACCEPT does nothing.
+    From EACH of pc2, pc3 and pc4, check hostname, then run:
+      ssh -o ConnectTimeout=5 pc1 hostname
+      ping -c3 pc1
+    SSH should time out only from pc2; all three pings should work.
+    The remote hostname command returns automatically to the workstation.
+    Use exit to return to the firewall before testing the next workstation.
 
   NAME LOOKUP (DNS)     ssh pc1   then:  getent hosts coke.dreamland.com.au
 
