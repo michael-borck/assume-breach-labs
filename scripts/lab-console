@@ -25,21 +25,70 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOGFILE="$(mktemp -t lab-console.XXXXXX)"
 
 # --- container engine ------------------------------------------------------
-# Docker by default. Set CONTAINER_ENGINE=podman to run the labs under Podman —
-# rootless Podman in particular, which (unlike Docker) does NOT make everyone who
-# can start containers root on the host. See docs/SERVER-DEPLOYMENT.md Part F.
-#
-# The compose file itself is engine-neutral: it is an OCI-era spec, not a Docker
-# artefact, so there is ONE set of labs either way. Only the command differs.
-#   docker  -> `docker compose`
-#   podman  -> `podman compose` (Podman 4.7+), falling back to `podman-compose`
-ENGINE="${CONTAINER_ENGINE:-docker}"
-if [ "$ENGINE" = "podman" ] && ! podman compose version >/dev/null 2>&1 \
-   && command -v podman-compose >/dev/null 2>&1; then
-    COMPOSE=(podman-compose)
-else
-    COMPOSE=("$ENGINE" compose)
+# Docker by default; Podman fully supported. The compose file is engine-neutral
+# (an OCI-era spec, not a Docker artefact), so there is ONE set of labs either
+# way — only the command differs. The engine resolves itself, in order:
+#   1. CONTAINER_ENGINE, if set (docker|podman)
+#   2. docker, if the CLI exists
+#   3. podman
+# Whatever the engine, the compose FRONT-END must support Compose v2 profiles
+# (--profile module-NN): every service in docker-compose.yml belongs to one,
+# and a provider without profiles (Compose v1, Ubuntu's podman-compose 1.0.6)
+# reads "--profile module-01" as a command name and dies. That is probed here
+# and reported plainly by require_compose; scripts/setup-vm.sh sets an Ubuntu
+# lab VM up correctly.
+ENGINE="${CONTAINER_ENGINE:-}"
+if [ -z "$ENGINE" ]; then
+    if command -v docker >/dev/null 2>&1; then ENGINE=docker
+    elif command -v podman >/dev/null 2>&1; then ENGINE=podman
+    fi
 fi
+
+compose_supports_profiles() { "$@" --help 2>&1 | grep -q -- '--profile'; }
+
+# Point Compose v2 at Podman's Docker-compatible socket, starting the user
+# service if the image or session has not enabled it yet. Exports DOCKER_HOST
+# and returns 0 only when the socket is actually answering.
+ensure_podman_socket() {
+    local sock="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/podman/podman.sock" i
+    if [ ! -S "$sock" ]; then
+        systemctl --user enable --now podman.socket >/dev/null 2>&1 || true
+        for i in 1 2 3 4 5; do [ -S "$sock" ] && break; sleep 1; done
+    fi
+    if [ ! -S "$sock" ]; then
+        # No systemd user session (SSH without lingering, a broken image):
+        # start the API service by hand and let it outlive this shell.
+        podman system service "unix://$sock" --time=0 >/dev/null 2>&1 &
+        for i in 1 2 3; do [ -S "$sock" ] && break; sleep 1; done
+    fi
+    [ -S "$sock" ] || return 1
+    export DOCKER_HOST="unix://$sock"
+}
+
+COMPOSE=()
+case "$ENGINE" in
+    docker)
+        if docker compose version >/dev/null 2>&1; then
+            COMPOSE=(docker compose)
+        elif command -v docker-compose >/dev/null 2>&1 \
+             && compose_supports_profiles docker-compose; then
+            COMPOSE=(docker-compose)
+        fi ;;
+    podman)
+        # podman-compose is preferred ONLY when it is new enough for profiles —
+        # the vintage Ubuntu package is not, and `podman compose` would quietly
+        # delegate to it. A Compose v2 `docker-compose` binary is driven
+        # directly over Podman's socket instead. (Ubuntu's docker-compose-v2
+        # apt package ships only the docker-CLI plugin, which `podman compose`
+        # cannot see, so the wrapper is not relied on either way.)
+        if command -v podman-compose >/dev/null 2>&1 \
+           && compose_supports_profiles podman-compose; then
+            COMPOSE=(podman-compose)
+        elif command -v docker-compose >/dev/null 2>&1 \
+             && compose_supports_profiles docker-compose; then
+            ensure_podman_socket && COMPOSE=(docker-compose)
+        fi ;;
+esac
 LAB_VERSION="$(head -1 "$PROJECT_ROOT/VERSION" 2>/dev/null | tr -d '\r')"
 LAB_VERSION="${LAB_VERSION:-unknown}"
 
@@ -94,6 +143,12 @@ choose_module() {
 
 # --- generic lifecycle -----------------------------------------------------
 need_docker() {
+    if [ -z "$ENGINE" ]; then
+        printf "${C_ERR}Neither Docker nor Podman was found on this machine.${NC}\n"
+        printf "  Docker:  https://www.docker.com/products/docker-desktop\n"
+        printf "  Podman:  https://podman.io/getting-started/installation\n"
+        exit 1
+    fi
     if ! command -v "$ENGINE" >/dev/null 2>&1; then
         if [ "$ENGINE" = "podman" ]; then
             printf "${C_ERR}Podman is not installed.${NC}  https://podman.io/getting-started/installation\n"
@@ -103,13 +158,36 @@ need_docker() {
         exit 1
     fi
     if ! "$ENGINE" info >/dev/null 2>&1; then
-        if [ "$ENGINE" = "podman" ]; then
+        # A Docker CLI pointed at rootless Podman (DOCKER_HOST) whose socket is
+        # not up yet is recoverable on the spot; everything else is fatal.
+        if command -v podman >/dev/null 2>&1 && ensure_podman_socket \
+           && "$ENGINE" info >/dev/null 2>&1; then
+            return 0
+        fi
+        if [ -n "${DOCKER_HOST:-}" ]; then
+            printf "${C_ERR}Docker is set to use Podman (DOCKER_HOST=%s) but the socket is not answering.${NC}\n" "$DOCKER_HOST"
+            printf "Try:  systemctl --user start podman.socket     then run ./start.sh again.\n"
+        elif [ "$ENGINE" = "podman" ]; then
             printf "${C_ERR}Podman is not ready.${NC} On macOS/Windows run: podman machine start\n"
         else
             printf "${C_ERR}Docker is not running.${NC} Start Docker Desktop and try again.\n"
         fi
         exit 1
     fi
+}
+
+# Friendly stop for a machine whose only compose provider predates profiles.
+require_compose() {
+    [ "${#COMPOSE[@]}" -gt 0 ] && return 0
+    printf "${C_ERR}This machine's compose tool is too old to run the labs.${NC}\n\n"
+    printf "Every lab machine sits behind a Compose 'profile', and the compose\n"
+    printf "installed here (e.g. Ubuntu's podman-compose 1.0.6, or Compose v1)\n"
+    printf "predates profiles, so the lab cannot be switched on.\n\n"
+    printf "Fix it with one command, then retry:\n"
+    printf "    ${C_PROMPT}bash scripts/setup-user.sh${NC}      (no admin rights needed)\n"
+    printf "Lab staff can also fix the whole image: sudo bash scripts/setup-vm.sh\n\n"
+    printf "(Needs podman-compose 1.2+, or Docker Compose v2.)\n"
+    exit 1
 }
 
 lab_is_up() { [ -n "$("$ENGINE" ps -q --filter "name=${UP_CHECK}" 2>/dev/null)" ]; }
@@ -389,6 +467,7 @@ fi
 start_version_check   # backgrounded; result is read after the lab is up
 banner
 need_docker
+require_compose
 if [ -z "$ANALYST" ] && [ -t 0 ]; then
     read -r -p "Enter your name (for the lab session): " ANALYST
 fi

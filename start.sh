@@ -6,4 +6,6 @@
 # Choose a different module with LAB_MODULE (default 07):
 #   LAB_MODULE=07 ./start.sh
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec "$SCRIPT_DIR/scripts/lab-console" "$@"
+# Run through bash explicitly: a freshly unzipped pack has no +x bit, and
+# "bash start.sh" must work the same as "./start.sh".
+exec bash "$SCRIPT_DIR/scripts/lab-console" "$@"

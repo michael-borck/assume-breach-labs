@@ -127,12 +127,18 @@ including from an external/exFAT drive. Two approaches carry lab data:
 Most people run the labs locally (see above). For locked-down lab PCs, Chromebooks, or anywhere Docker
 Desktop can't be installed, there are two online routes — in order of preference:
 
-1. **A managed Linux + Docker desktop (recommended).** If your institution offers a Docker-capable
-   Linux VM through a remote-desktop / VDI service, run the labs there exactly as you would locally —
-   download the ZIP and run `./start.sh`. No personal accounts, IT-supported. Ask your unit coordinator
-   whether this is available.
+1. **A managed Linux desktop (recommended).** If your institution offers a Linux VM through a
+   remote-desktop / VDI service, run the labs there exactly as you would locally — download the ZIP
+   and run `bash start.sh`. No personal accounts, IT-supported. Ask your unit coordinator whether
+   this is available.
 
-2. **GitHub Codespaces (personal fallback).** Opens the repo in a cloud VS Code in your browser and
+2. **A managed Linux + Podman VM.** Same idea where the image ships **Podman** instead of Docker
+   (common where IT won't grant Docker's host privileges): log in, download the ZIP, run
+   `bash start.sh`. The console detects Podman automatically and hides it the same way. One-time
+   fix if the console says compose is too old: `bash scripts/setup-user.sh` — no admin rights
+   needed. Lab staff can do the whole image at once: `sudo bash scripts/setup-vm.sh`.
+
+3. **GitHub Codespaces (personal fallback).** Opens the repo in a cloud VS Code in your browser and
    runs the same `./start.sh`, nothing installed on your machine. Open the repo on GitHub →
    **Code ▸ Codespaces ▸ Create codespace**, then run `./start.sh`. Know the trade-offs:
    - Needs a **GitHub account** (more free hours via [GitHub Education](https://education.github.com)).
