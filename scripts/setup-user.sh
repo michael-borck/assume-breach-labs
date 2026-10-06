@@ -39,14 +39,18 @@ for candidate in "$BIN/podman-compose" "$(command -v podman-compose 2>/dev/null 
 done
 
 installed=""
-if python3 -m venv "$VENV" 2>/dev/null; then
+# venv failure prints to STDOUT as well as stderr (ensurepip notice), and can
+# leave a half-built directory behind — silence and sweep both.
+rm -rf "$VENV"
+if python3 -m venv "$VENV" >/dev/null 2>&1; then
     echo "==> Installing a current podman-compose (user-local) ..."
     "$VENV/bin/pip" install -q --upgrade pip
     "$VENV/bin/pip" install -q podman-compose
     ln -sfn "$VENV/bin/podman-compose" "$BIN/podman-compose"
     installed="$BIN/podman-compose"
 else
-    echo "==> python3-venv unavailable; falling back to the standalone Compose v2 binary ..."
+    rm -rf "$VENV"
+    echo "==> python3-venv unavailable (expected on these VMs); using the standalone Compose v2 binary ..."
     URL="https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64"
     if command -v curl >/dev/null 2>&1; then
         curl -fsSL -o "$BIN/docker-compose" "$URL"
