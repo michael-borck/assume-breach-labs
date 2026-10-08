@@ -256,14 +256,22 @@ report_if_stale() {
 }
 
 # Pull the published images (all are public on GHCR), falling back to a local
-# build only if the pull fails, then start without --build to avoid the legacy
+# build if the pull fails, then start without --build to avoid the legacy
 # builder racing when several services share one image tag. Dots while it works.
+#
+# On provisioned machines (an offline image store registered via
+# additionalimagestores — see scripts/provision-image-store.sh) the pull fails
+# at registry policy and nothing needs building: `up -d` is the real gate, and
+# it uses the local images directly. So pull and build are both best-effort
+# here, and `up` decides.
 compose_up() {
     (
         cd "$PROJECT_ROOT"
-        { "${COMPOSE[@]}" --profile "module-${MODULE_NO}" pull \
-            || "${COMPOSE[@]}" --profile "module-${MODULE_NO}" build; } \
-            && "${COMPOSE[@]}" --profile "module-${MODULE_NO}" up -d
+        "${COMPOSE[@]}" --profile "module-${MODULE_NO}" pull || true
+        if ! "${COMPOSE[@]}" --profile "module-${MODULE_NO}" up -d; then
+            "${COMPOSE[@]}" --profile "module-${MODULE_NO}" build \
+                && "${COMPOSE[@]}" --profile "module-${MODULE_NO}" up -d
+        fi
     ) >"$LOGFILE" 2>&1 &
     local pid=$!
     while kill -0 "$pid" 2>/dev/null; do printf "."; sleep 1; done
