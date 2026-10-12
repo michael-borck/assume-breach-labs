@@ -51,7 +51,7 @@ echo "$IMAGES" | sed 's/^/    /'
 
 mkdir -p "$OUT"
 
-pull_and_save() {
+save() {
     local ref="$1"
     local file
     file="$(printf '%s' "$ref" | tr '/:' '__').tar"
@@ -59,10 +59,12 @@ pull_and_save() {
     "$ENGINE" pull --platform "$PLATFORM" "$ref"
     echo "==> Saving  $OUT/$file"
     "$ENGINE" save -o "$OUT/$file" "$ref"
+    printf '%s|%s\n' "$ref" "$file" >> "$OUT/images.txt"
 }
 
+: > "$OUT/images.txt"
 while IFS= read -r ref; do
-    [ -n "$ref" ] && pull_and_save "$ref"
+    [ -n "$ref" ] && save "$ref"
 done <<EOF
 $IMAGES
 EOF
@@ -71,6 +73,7 @@ echo "==> Writing manifest ..."
 ( cd "$OUT" && sha256sum *.tar > manifest.sha256 )
 
 cp scripts/provision-image-store.sh "$OUT"/
+cp scripts/load-images.sh "$OUT"/
 
 cat > "$OUT/README-IT.txt" <<'EOF'
 ASSUME BREACH LABS - OFFLINE IMAGE PACK
@@ -93,6 +96,10 @@ Verify afterwards, from a normal user account:
 
     podman images                       # the pack's images should be listed
     cd <extracted labs folder> && bash start.sh
+
+Students without IT access can use the same tarballs themselves: unzip this
+folder inside the labs folder as images/ (or run scripts/load-images.sh
+against it) — podman load is user-space and bypasses registry policy.
 
 Removing the pack later:
     rm -rf /opt/<store>-images   and drop its entry from additionalimagestores

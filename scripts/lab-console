@@ -287,6 +287,16 @@ bring_up() {
     # the old lab. `up -d` is cheap when nothing changed, and recreates only the
     # containers whose image actually moved.
     local was_up=""
+    # Offline packs ship tarballs in images/ (see scripts/make-offline-zip.sh).
+    # Load whatever is missing into the local store first: `load` is
+    # user-space and needs no network, so it works on VMs where pulls are
+    # policy-blocked. Skips images already present, so it is a no-op after
+    # the first run — and a no-op entirely for Docker users without a pack.
+    if [ -f "$PROJECT_ROOT/scripts/load-images.sh" ] \
+       && ls "$PROJECT_ROOT"/images/*.tar >/dev/null 2>&1; then
+        printf "${C_DIM}Loading lab machines from the pack (first run only)...${NC}\n"
+        bash "$PROJECT_ROOT/scripts/load-images.sh" images --quiet || true
+    fi
     if lab_is_up; then
         was_up=1
         printf "${C_DIM}Lab already running — checking for updates...${NC}\n"
