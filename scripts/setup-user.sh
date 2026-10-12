@@ -73,6 +73,9 @@ echo "==> Verifying ..."
 compose_ok "$installed" || { echo "Something went wrong: $installed still lacks --profile."; exit 1; }
 "$installed" --version 2>/dev/null || true
 
+if [ "${RUN_BY_CONSOLE:-0}" = "1" ]; then
+    echo "One-time setup complete."
+else
 cat <<'EOF'
 
 Ready. Open a NEW terminal, then from the lab folder:
@@ -81,3 +84,4 @@ Ready. Open a NEW terminal, then from the lab folder:
 
 The console finds Podman and this compose automatically — you type nothing else.
 EOF
+fi
