@@ -40,7 +40,21 @@ while IFS='|' read -r ref file; do
         continue
     fi
     [ -f "$DIR/$file" ] || { echo "Missing $DIR/$file (for $ref) — pack incomplete?"; exit 1; }
-    "$ENGINE" load -i "$DIR/$file" >/dev/null
+    # policy.json governs ARCHIVE loads too, not just registry pulls: on
+    # machines that allow pulls but not archives (a common policy shape),
+    # every load fails with "rejected by policy". That is not an error — the
+    # image comes from the registry (or a baked store) instead — so skip it
+    # quietly and let compose_up's pull do its job.
+    if ! err="$("$ENGINE" load -i "$DIR/$file" 2>&1)"; then
+        case "$err" in
+            *"rejected by policy"*)
+                skipped=$((skipped + 1))
+                continue ;;
+            *)
+                printf '%s\n' "$err" >&2
+                echo "!! loading $DIR/$file (for $ref) failed."; exit 1 ;;
+        esac
+    fi
     loaded=$((loaded + 1))
 done < "$LIST"
 
