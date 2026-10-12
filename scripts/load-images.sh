@@ -58,4 +58,4 @@ while IFS='|' read -r ref file; do
     loaded=$((loaded + 1))
 done < "$LIST"
 
-[ "$QUIET" -eq 1 ] || printf "Images ready: %d loaded, %d already present.\n" "$loaded" "$skipped"
+[ "$QUIET" -eq 1 ] || printf "Images ready: %d loaded, %d skipped (already present or policy-blocked).\n" "$loaded" "$skipped"
