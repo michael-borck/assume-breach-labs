@@ -60,6 +60,15 @@ IMAGES="$( { printf '%s\n%s\n' "$IMAGES" "$BASES"; } | sort -u )"
 [ -n "$IMAGES" ] || { echo "No images found for module $MODULE?"; exit 1; }
 echo "$IMAGES" | sed 's/^/    /'
 
+# A pack full of arm64 images would load fine on the amd64 VMs and then
+# refuse to run, so verify rather than trust --platform.
+verify_arch() {
+    local arch
+    arch="$("$ENGINE" image inspect "$1" --format '{{.Architecture}}')"
+    [ "$arch" = "amd64" ] \
+        || { echo "!! $1 is '$arch', not amd64. Refusing to pack."; exit 1; }
+}
+
 STAGE="$(mktemp -d /tmp/offline-zip.XXXXXX)"
 trap 'rm -rf "$STAGE"' EXIT
 ROOT="$STAGE/assume-breach-labs"
@@ -74,6 +83,7 @@ while IFS= read -r ref; do
     [ -n "$ref" ] || continue
     file="$(printf '%s' "$ref" | tr '/:' '__').tar"
     "$ENGINE" pull --platform "$PLATFORM" "$ref" >/dev/null
+    verify_arch "$ref"
     "$ENGINE" save -o "$ROOT/images/$file" "$ref"
     printf '%s|%s\n' "$ref" "$file" >> "$ROOT/images/images.txt"
     echo "    $ref"

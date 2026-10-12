@@ -51,12 +51,22 @@ echo "$IMAGES" | sed 's/^/    /'
 
 mkdir -p "$OUT"
 
+# A pack full of arm64 images would load fine on the amd64 VMs and then
+# refuse to run, so verify rather than trust --platform.
+verify_arch() {
+    local arch
+    arch="$("$ENGINE" image inspect "$1" --format '{{.Architecture}}')"
+    [ "$arch" = "amd64" ] \
+        || { echo "!! $1 is '$arch', not amd64. Refusing to pack."; exit 1; }
+}
+
 save() {
     local ref="$1"
     local file
     file="$(printf '%s' "$ref" | tr '/:' '__').tar"
     echo "==> Pulling $ref"
     "$ENGINE" pull --platform "$PLATFORM" "$ref"
+    verify_arch "$ref"
     echo "==> Saving  $OUT/$file"
     "$ENGINE" save -o "$OUT/$file" "$ref"
     printf '%s|%s\n' "$ref" "$file" >> "$OUT/images.txt"
