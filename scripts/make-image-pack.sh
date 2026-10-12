@@ -56,6 +56,14 @@ mkdir -p "$OUT"
 verify_arch() {
     local arch
     arch="$("$ENGINE" image inspect "$1" --format '{{.Architecture}}')"
+    if [ "$arch" != "amd64" ]; then
+        # A stale local tag (often an arm64 image built on this Mac) shadows
+        # the registry's amd64 content, and pull-by-tag then says "up to
+        # date" without fetching. Drop it and pull genuinely, once.
+        "$ENGINE" image rm "$1" >/dev/null 2>&1 || true
+        "$ENGINE" pull --platform "$PLATFORM" "$1" >/dev/null
+        arch="$("$ENGINE" image inspect "$1" --format '{{.Architecture}}')"
+    fi
     [ "$arch" = "amd64" ] \
         || { echo "!! $1 is '$arch', not amd64. Refusing to pack."; exit 1; }
 }
@@ -66,9 +74,21 @@ save() {
     file="$(printf '%s' "$ref" | tr '/:' '__').tar"
     echo "==> Pulling $ref"
     "$ENGINE" pull --platform "$PLATFORM" "$ref"
-    verify_arch "$ref"
     echo "==> Saving  $OUT/$file"
-    "$ENGINE" save -o "$OUT/$file" "$ref"
+    if [ "$ENGINE" = "docker" ]; then
+        # Docker's containerd store keeps the whole multi-arch index under the
+        # tag, and `image inspect` reports its PRIMARY (often arm64)
+        # architecture — so inspect is not a reliable check. `save --platform`
+        # is: it exports exactly the requested platform or fails.
+        "$ENGINE" save --platform "$PLATFORM" -o "$OUT/$file" "$ref" && return 0
+        "$ENGINE" image rm "$ref" >/dev/null 2>&1 || true
+        "$ENGINE" pull --platform "$PLATFORM" "$ref" >/dev/null
+        "$ENGINE" save --platform "$PLATFORM" -o "$OUT/$file" "$ref" \
+            || { echo "!! $ref: no usable $PLATFORM content. Refusing to pack."; exit 1; }
+    else
+        verify_arch "$ref"
+        "$ENGINE" save -o "$OUT/$file" "$ref"
+    fi
     printf '%s|%s\n' "$ref" "$file" >> "$OUT/images.txt"
 }
 

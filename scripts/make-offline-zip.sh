@@ -41,22 +41,41 @@ if [ -z "$ENGINE" ]; then
 fi
 echo "==> Engine: $ENGINE (packing for $PLATFORM)"
 
-# Images for the chosen profile, plus every base the Dockerfiles build from
-# (the build fallback on the VMs needs them local).
-if [ "$MODULE" = "all" ]; then
-    IMAGES="$(awk '/^[[:space:]]+image:/ {print $2}' docker-compose.yml | tr -d '"')"
+# Images for the chosen profile, plus the base images ITS OWN Dockerfiles
+# build from (the build fallback on the VMs needs them local). Scoping bases
+# to the module's Dockerfiles keeps a module-01 zip from carrying module-06's
+# wireshark: with `all` we still scan the whole repo.
+CFG_JSON="$("$ENGINE" compose --profile "module-$MODULE" config --format json 2>/dev/null || true)"
+if [ -n "$CFG_JSON" ]; then
+    LINES="$(printf '%s' "$CFG_JSON" | python3 -c '
+import json, sys
+cfg = json.load(sys.stdin)
+for svc in cfg.get("services", {}).values():
+    if svc.get("image"):
+        print("IMG\t" + svc["image"])
+    b = svc.get("build") or {}
+    if isinstance(b, dict) and b.get("dockerfile"):
+        # dockerfile paths are relative to the service build CONTEXT
+        ctx = (b.get("context") or ".").rstrip("/")
+        print("DF\t" + ctx + "/" + b["dockerfile"])
+')"
+    IMAGES="$(printf '%s\n' "$LINES" | awk -F'\t' '$1=="IMG" {print $2}')"
+    DOCKERFILES="$(printf '%s\n' "$LINES" | awk -F'\t' '$1=="DF" {print $2}')"
 else
-    PROBE="$("$ENGINE" compose --profile "module-$MODULE" config --images 2>/dev/null || true)"
-    if [ -n "$PROBE" ]; then
-        IMAGES="$PROBE"
-    else
-        echo "==> (compose config unavailable; falling back to grep — check the list)"
-        IMAGES="$(awk '/^[[:space:]]+image:/ {print $2}' docker-compose.yml | tr -d '"')"
-    fi
+    echo "==> (compose config unavailable; falling back to grep — check the list)"
+    IMAGES="$(awk '/^[[:space:]]+image:/ {print $2}' docker-compose.yml | tr -d '"')"
 fi
-BASES="$(find . -name 'Dockerfile*' -not -path './dist/*' -not -path './.git/*' \
-    -exec grep -hE '^FROM' {} + | awk '$2 !~ /\$/ {print $2}' | tr -d '"')"
-IMAGES="$( { printf '%s\n%s\n' "$IMAGES" "$BASES"; } | sort -u )"
+if [ "$MODULE" = "all" ] || [ -z "${DOCKERFILES:-}" ]; then
+    BASES="$(find . -name 'Dockerfile*' -not -path './dist/*' -not -path './.git/*' \
+        -exec grep -hE '^FROM' {} + | awk '$2 !~ /\$/ {print $2}' | tr -d '"')"
+else
+    BASES="$(while IFS= read -r df; do
+                 if [ -f "$df" ]; then
+                     grep -hE '^FROM' "$df" || true
+                 fi
+             done <<< "$DOCKERFILES" | awk '$2 !~ /\$/ {print $2}' | tr -d '"')"
+fi
+IMAGES="$( { printf '%s\n%s\n' "${IMAGES:-}" "${BASES:-}"; } | sort -u )"
 [ -n "$IMAGES" ] || { echo "No images found for module $MODULE?"; exit 1; }
 echo "$IMAGES" | sed 's/^/    /'
 
@@ -65,6 +84,14 @@ echo "$IMAGES" | sed 's/^/    /'
 verify_arch() {
     local arch
     arch="$("$ENGINE" image inspect "$1" --format '{{.Architecture}}')"
+    if [ "$arch" != "amd64" ]; then
+        # A stale local tag (often an arm64 image built on this Mac) shadows
+        # the registry's amd64 content, and pull-by-tag then says "up to
+        # date" without fetching. Drop it and pull genuinely, once.
+        "$ENGINE" image rm "$1" >/dev/null 2>&1 || true
+        "$ENGINE" pull --platform "$PLATFORM" "$1" >/dev/null
+        arch="$("$ENGINE" image inspect "$1" --format '{{.Architecture}}')"
+    fi
     [ "$arch" = "amd64" ] \
         || { echo "!! $1 is '$arch', not amd64. Refusing to pack."; exit 1; }
 }
@@ -82,9 +109,18 @@ echo "==> Pulling and saving images ..."
 while IFS= read -r ref; do
     [ -n "$ref" ] || continue
     file="$(printf '%s' "$ref" | tr '/:' '__').tar"
-    "$ENGINE" pull --platform "$PLATFORM" "$ref" >/dev/null
-    verify_arch "$ref"
-    "$ENGINE" save -o "$ROOT/images/$file" "$ref"
+    "$ENGINE" pull --platform "$PLATFORM" "$ref" >/dev/null \
+        || { echo "!! pull failed: $ref"; exit 1; }
+    # Docker's containerd store keeps the whole multi-arch index under the
+    # tag and `image inspect` reports its PRIMARY (often arm64) architecture,
+    # so for docker `save --platform` is the arch check; inspect is for podman.
+    if [ "$ENGINE" = "docker" ]; then
+        "$ENGINE" save --platform "$PLATFORM" -o "$ROOT/images/$file" "$ref" \
+            || { echo "!! $ref: no usable $PLATFORM content. Refusing to pack."; exit 1; }
+    else
+        verify_arch "$ref"
+        "$ENGINE" save -o "$ROOT/images/$file" "$ref"
+    fi
     printf '%s|%s\n' "$ref" "$file" >> "$ROOT/images/images.txt"
     echo "    $ref"
 done <<EOF
