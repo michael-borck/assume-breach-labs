@@ -28,7 +28,9 @@ podman info >/dev/null 2>&1 || { echo "Podman is installed but not answering (tr
 
 mkdir -p "$BIN"
 
-compose_ok() { "$1" --help 2>&1 | grep -q -- '--profile'; }
+# Functional probe (see compose_supports_profiles in lab-console): trust the
+# exit code, not the help text.
+compose_ok() { "$1" --profile lab-probe-check version >/dev/null 2>&1; }
 
 # Already good (any podman-compose >= 1.2 on PATH)?
 for candidate in "$BIN/podman-compose" "$(command -v podman-compose 2>/dev/null || true)"; do

@@ -44,7 +44,12 @@ if [ -z "$ENGINE" ]; then
     fi
 fi
 
-compose_supports_profiles() { "$@" --help 2>&1 | grep -q -- '--profile'; }
+# Functional probe: invoke compose exactly as the lab will and see whether
+# it accepts --profile (exit 0) or dies on it (usage + nonzero). Help-text
+# greps miss tools that support profiles without advertising them.
+compose_supports_profiles() {
+    "$@" --profile lab-probe-check version >/dev/null 2>&1
+}
 
 # Point Compose v2 at Podman's Docker-compatible socket, starting the user
 # service if the image or session has not enabled it yet. Exports DOCKER_HOST
