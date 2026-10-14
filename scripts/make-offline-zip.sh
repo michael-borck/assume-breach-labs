@@ -27,6 +27,10 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# macOS AppleDouble files on exFAT break the docker build context (the tar
+# walker xattrs every file, ignored or not). Sweep them before anything else.
+find . -name "._*" -type f -delete 2>/dev/null || true
+
 MODULE="${1:-}"
 OUTDIR="${2:-dist/offline}"
 PLATFORM=linux/amd64
@@ -131,6 +135,7 @@ EOF
 mkdir -p "$OUTDIR"
 ZIP="$(cd "$OUTDIR" && pwd)/assume-breach-labs-offline-$MODULE.zip"
 echo "==> Writing $ZIP ..."
+rm -f "$ZIP"
 ( cd "$STAGE" && zip -rq "$ZIP" assume-breach-labs )
 
 echo
