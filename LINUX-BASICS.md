@@ -145,6 +145,8 @@ comes straight back on its own — no `exit` needed.
 ps aux                # every process; pipe into grep to find one
 ps -ef                # the same thing, a different spelling — some guides use this one
 ss -tlnp              # TCP ports something is listening on, and which process owns them
+kill 1234             # end the process with id 1234
+pkill -f NAME         # end every process whose command line contains NAME
 ```
 
 These are how a defender asks a machine "what are you actually doing right now?" — you'll
