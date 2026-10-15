@@ -153,6 +153,53 @@ These are how a defender asks a machine "what are you actually doing right now?"
 want them any time a lab makes you suspicious of a box. (`ps aux` and `ps -ef` list the same
 processes in slightly different columns; use whichever a worksheet shows.)
 
+## Check yourself: spot the right command
+
+Every option below looks plausible. Several are commands AI assistants and
+Windows habits produce. Only one does the job. If you cannot say **why** the
+others are wrong, re-read the section named in brackets.
+
+1. Which command shows the TCP ports something is listening on, and which
+   process owns them? [investigating]
+   a. `ps -tlnp`  b. `ss -tlnp`  c. `netstat -ports`  d. `ip ports show`
+
+2. A service runs as `na-adminpanel`. End every process whose command line
+   contains that word. [stopping a service]
+   a. `pkill -f na-adminpanel`  b. `stop-service na-adminpanel`  c. `pkill -u root`  d. `killall --name na-adminpanel --confirm`
+
+3. Produce the fingerprint of `export.csv` to compare with a published value.
+   [hashing]
+   a. `hash export.csv`  b. `checksum /sha256 export.csv`  c. `sha256sum export.csv`  d. `md5 export.csv --algorithm 256`
+
+4. Make a file readable by its owner and the group, and nothing for anyone
+   else. [permissions]
+   a. `chown 640 export.csv`  b. `chmod 640 export.csv`  c. `chmod ugo+r export.csv`  d. `chmod 644 export.csv`
+
+5. Read a long log file, one screen at a time. [reading files]
+   a. `cat /srv/logs/auth.log`  b. `tail /srv/logs/auth.log --pages`  c. `less /srv/logs/auth.log`  d. `open /srv/logs/auth.log --pager`
+
+6. Your terminal says `command not found: netstat`. Why, and what do you use
+   instead? [investigating]
+
+<details>
+<summary>Answers</summary>
+
+1. **b.** `ps` lists processes, not ports; `netstat -ports` and `ip ports
+   show` are not real options. See "Who is doing what".
+2. **a.** `stop-service` is PowerShell, not Linux. `-u root` filters by *user*,
+   not name. `killall --name --confirm` is invented syntax. See "Who is doing
+   what".
+3. **c.** `hash`, `checksum` and `md5 --algorithm` are invented or the wrong
+   algorithm. See "Looking inside files".
+4. **b.** `chown` sets the *owner*, not the permission bits. `644` leaves the
+   file world-readable. See the permissions section of module 01.
+5. **c.** `cat` dumps it all at once, `tail --pages` is invented, `open` is a
+   desktop action. See "Looking inside files".
+6. `netstat` is legacy and often not installed. `ss -tlnp` is the modern
+   equivalent. See "Who is doing what".
+
+</details>
+
 ## Practice before (or between) labs
 
 The best free practice ground is **[OverTheWire: Bandit](https://overthewire.org/wargames/bandit/)** —
