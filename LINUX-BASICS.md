@@ -50,6 +50,9 @@ That also explains the launcher: `./start.sh` means "run the file `start.sh` *ri
 The shell won't run a program from the current directory by name alone — that's a safety
 feature — so you spell out the `./`.
 
+`bash start.sh` does the same job without the `./` — and without needing the file to be
+executable, which is why the lab and exam sheets use that form. Both work.
+
 ## Looking inside files
 
 ```
@@ -68,7 +71,11 @@ Inside `less` (and `man`): **space** or arrow keys to move, **`/text`** then Ent
 - **Tab** — autocompletes file and command names; press it twice to see the options. Use it
   constantly: it's faster than typing and it can't misspell `salaries.csv`.
 - **↑ (arrow-up)** — brings back previous commands to edit and re-run.
-- **Ctrl-C** — stops the command that's currently running.
+- **Ctrl-C** — stops the command that's currently running. **It does not copy.**
+- **Ctrl-Shift-C** / **Ctrl-Shift-V** — copy and paste in the terminal. (Plain Ctrl-V does
+  nothing here; Ctrl-C kills what you're running. This is the classic first-day trap.)
+- **Open a terminal**: in the file manager, right-click in the folder and choose
+  **Open Terminal Here**. That is how the exam sheet starts.
 - **`q`** — leaves `less` and `man`.
 - **`exit`** — leaves the current shell (or an `ssh` session).
 - Trapped in `vi`/`vim` by accident? Press **Esc**, type **`:q!`**, press Enter.
@@ -185,7 +192,7 @@ others are wrong, re-read the section named in brackets.
 <summary>Answers</summary>
 
 1. **b.** `ps` lists processes, not ports; `netstat -ports` and `ip ports
-   show` are not real options. See "Who is doing what".
+   show` are not real options. See "What's running? What's listening?".
 2. **a.** `stop-service` is PowerShell, not Linux. `-u root` filters by *user*,
    not name. `killall --name --confirm` is invented syntax. See "Who is doing
    what".
@@ -196,7 +203,7 @@ others are wrong, re-read the section named in brackets.
 5. **c.** `cat` dumps it all at once, `tail --pages` is invented, `open` is a
    desktop action. See "Looking inside files".
 6. `netstat` is legacy and often not installed. `ss -tlnp` is the modern
-   equivalent. See "Who is doing what".
+   equivalent. See "What's running? What's listening?".
 
 </details>
 
