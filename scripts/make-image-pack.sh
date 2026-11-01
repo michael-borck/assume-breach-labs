@@ -24,6 +24,10 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# macOS AppleDouble files on exFAT break the docker build context (the tar
+# walker xattrs every file, ignored or not). Sweep them before anything else.
+find . -name "._*" -type f -delete 2>/dev/null || true
+
 OUT="${1:-dist/lab-images-pack}"
 PLATFORM=linux/amd64
 
