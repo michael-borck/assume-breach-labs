@@ -451,13 +451,20 @@ networks:
     internal: true
 
   # m11 and m07 are NOT internal — see the "cannot be isolated" note above.
+  # Podman/netavark >= 2 (Podman 6) isolates bridge networks from each other by
+  # default. These labs route through a multi-homed container, so each network
+  # must opt out. Docker ignores this option (it uses its own isolation rules).
   m11-office:
     name: m11-office
+    driver_opts:
+      isolate: "false"
     ipam:
       config:
         - subnet: 10.11.0.0/24
   m11-datacentre:
     name: m11-datacentre
+    driver_opts:
+      isolate: "false"
     ipam:
       config:
         - subnet: 10.11.1.0/24
@@ -469,12 +476,16 @@ networks:
         - subnet: 10.2.0.0/24
   m07-inside:
     name: m07-inside
+    driver_opts:
+      isolate: "false"
     ipam:
       config:
         - subnet: 10.1.1.0/24
   m07-outside:
     # "outside" is the lab's simulated internet side, not the real one.
     name: m07-outside
+    driver_opts:
+      isolate: "false"
     ipam:
       config:
         - subnet: 10.1.2.0/24

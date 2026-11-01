@@ -9,7 +9,12 @@ BASE_IMAGE ?= ghcr.io/michael-borck/assume-breach-base:latest
 #   make m07 CONTAINER_ENGINE=podman
 ENGINE     ?= $(CONTAINER_ENGINE)
 ENGINE     := $(if $(ENGINE),$(ENGINE),docker)
-COMPOSE    ?= $(ENGINE) compose
+ifeq ($(ENGINE),podman)
+# Prefer the `podman compose` wrapper; fall back to a standalone podman-compose.
+COMPOSE    ?= $(shell podman compose version >/dev/null 2>&1 && echo "podman compose" || echo "podman-compose")
+else
+COMPOSE    ?= docker compose
+endif
 
 # Profile-selecting flags for every module, for the whole-series targets below.
 ALL_PROFILES := $(foreach m,01 02 03 04 05 06 07 08 09 10 11,--profile module-$(m))

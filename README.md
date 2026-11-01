@@ -18,12 +18,17 @@ one small exception) no dependence on external websites. The practical companion
 
 ## Quick start
 
-You don't need to know Docker. Install Docker Desktop (see
+You don't need to know Docker. Install Docker Desktop or Podman (see
 [`modules/module-00-setup`](modules/module-00-setup/)), then:
 
 ```bash
 ./start.sh
 ```
+
+Podman works too: `./start.sh` detects it, or set `CONTAINER_ENGINE=podman`.
+Rootless Podman runs most modules; if a networking module (06, 07 or 11) reports
+permission errors, switch to rootful Podman (`podman machine set --rootful` on
+macOS/Windows).
 
 (On Windows: install [Git for Windows](https://git-scm.com/download/win) once, then double-click `start.bat`.)
 

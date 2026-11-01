@@ -1,10 +1,11 @@
-# Module 00 — Environment Setup (Docker install & troubleshooting)
+# Module 00 — Environment Setup (Docker or Podman install & troubleshooting)
 
 Do this once, before your first lab. It replaces the old "install VirtualBox and copy the
-Windows XP VM" step. There is no VM here — everything runs in Docker containers.
+Windows XP VM" step. There is no Windows XP VM to install — everything runs in containers, under
+Docker or Podman. (On macOS/Windows, Podman runs a small Linux VM for you automatically.)
 
-By the end you will have Docker working, the shared toolbox image pulled, and one lab started
-and stopped again. Budget about 20 minutes, most of it waiting for downloads.
+By the end you will have Docker or Podman working, the shared toolbox image pulled, and one lab
+started and stopped again. Budget about 20 minutes, most of it waiting for downloads.
 
 > **You do not have to use your own laptop.** The lab machines already have everything
 > installed. This guide is for people who want the labs on their own computer as well —
@@ -19,10 +20,18 @@ and stopped again. Budget about 20 minutes, most of it waiting for downloads.
 - **Admin rights:** you need to be able to install software on the machine. On a locked-down
   work or family computer, use the lab machines instead.
 
-## 1. Install Docker
+## 1. Install Docker or Podman
 
-Docker is free for study and personal use. You want **Docker Desktop** on Windows and macOS,
-and **Docker Engine** on Linux — they are different products, so pick the right one.
+Both are free for study and personal use, and the labs work with either. The launcher detects
+which one is installed; set `CONTAINER_ENGINE=podman` to force Podman.
+
+- **Docker:** **Docker Desktop** on Windows and macOS, **Docker Engine** on Linux — they are
+  different products, so pick the right one.
+- **Podman:** install **Podman** plus a Compose front-end (`podman compose` or
+  `podman-compose`). Podman is daemonless and, on Linux, can run rootless.
+
+If you have no preference, Docker Desktop is the easier path on Windows and macOS. Podman is the
+easier path on Linux where you would rather not add yourself to the `docker` group.
 
 ### Windows
 
@@ -65,21 +74,62 @@ sudo usermod -aG docker $USER
 > thought — it is exactly the kind of privilege escalation you will hunt for in the
 > access-control lab.
 
+### Podman (alternative to Docker)
+
+**Linux:**
+
+```bash
+# Debian/Ubuntu — netavark and aardvark-dns provide the bridge/DNS stack
+sudo apt-get install -y podman netavark aardvark-dns
+pipx install podman-compose     # or install Docker Compose v2
+```
+
+**macOS/Windows:** install [Podman Desktop](https://podman-desktop.io/) or the Podman CLI, then
+create and start its Linux VM:
+
+```bash
+podman machine init
+podman machine start
+```
+
+Most modules run fine under rootless Podman. The networking modules that use `NET_ADMIN` and
+forwarding (**06, 07 and 11**) are the ones most likely to need more privilege; if they report
+permission errors, switch to rootful Podman. On macOS/Windows:
+
+```bash
+podman machine set --rootful
+podman machine stop && podman machine start
+```
+
+On Linux, run the launcher as root for those modules. Rootless is the safer default for everything
+else.
+
 ### Check it worked
 
-Open a terminal (**PowerShell** on Windows, **Terminal** on macOS/Linux) and run:
+Open a terminal (**PowerShell** on Windows, **Terminal** on macOS/Linux) and run the pair for the
+engine you installed.
+
+**Docker:**
 
 ```bash
 docker run --rm hello-world
 docker compose version      # must be Compose v2 — the "docker compose" subcommand
 ```
 
-The first prints a friendly "Hello from Docker!" paragraph. If both work, skip to step 3.
+**Podman:**
+
+```bash
+podman run --rm hello-world
+podman compose version      # or: podman-compose version
+```
+
+The first prints a friendly "Hello!" paragraph. If both work, skip to step 3.
 
 ## 2. Windows only: turning on virtualisation
 
-Docker runs Linux containers, which needs your CPU's virtualisation feature switched on. On most
-modern laptops it already is — try installing Docker first and only come here if it complains.
+Docker and Podman run Linux containers, which needs your CPU's virtualisation feature switched on.
+On most modern laptops it already is — try installing the engine first and only come here if it
+complains.
 
 ### Check whether it's already on
 
@@ -162,7 +212,7 @@ You start every lab the same way — the first run pulls the images it needs aut
 > Use `start.command` (Mac) / `start.bat` (Windows), or run `./start.sh` from a terminal.
 
 > Offline or want to pre-fetch the shared toolbox image? Run `make pull-base` (or `make build-base` to
-> build it locally; on an exFAT drive prefix with `DOCKER_BUILDKIT=0`).
+> build it locally; on an exFAT drive with Docker, prefix with `DOCKER_BUILDKIT=0`).
 
 ## 5. Smoke-test a lab
 
@@ -185,7 +235,7 @@ you got that prompt, your environment is ready.
 
 ## 6. How a lab works
 
-You start every lab the same way — you never type Docker commands.
+You start every lab the same way — you never type container-engine commands.
 
 - **Start:** `./start.sh` logs you in and powers on that module's machines.
 - **Work:** most modules drop you into a **real shell** on a lab machine (`root@station:/office#`),
@@ -207,8 +257,9 @@ You start every lab the same way — you never type Docker commands.
 
 **Check these three things first — they fix most of it:**
 
-1. **Is Docker actually running?** Installing it isn't enough. Start it and wait until it says
-   *running*; that takes a minute or two after you log in.
+1. **Is Docker or Podman actually running?** Installing is not enough. Start it and wait until it
+   says *running*; that takes a minute or two after you log in. Under Podman on macOS/Windows, run
+   `podman machine start`.
 2. **Are you in the right folder?** The one containing `start.command` / `start.bat` — the
    **inner** folder if you're on Windows.
 3. **The first launch downloads about a gigabyte.** It can look frozen. It isn't. Once it
@@ -229,16 +280,17 @@ Check the line under the welcome banner:
 
 If that line is missing, or the date is older than the one on the unit site, delete the old folders,
 [download the ZIP again](https://github.com/michael-borck/assume-breach-labs/archive/refs/heads/main.zip)
-and launch from the fresh one. You don't need to clean up Docker — the launcher replaces stale lab
-machines by itself.
+and launch from the fresh one. You don't need to clean up containers — the launcher replaces stale
+lab machines by itself.
 
-Still stuck? Restart the computer. Genuinely — it fixes Docker more often than it should.
+Still stuck? Restart the computer. Genuinely — it fixes container engines more often than it
+should.
 
 ### Windows
 
 | What you see | What it means |
 |---|---|
-| A window flashes open and disappears | Right-click inside the folder → **Open in Terminal**, type `.\start.bat`, press Enter. The message then stays on screen — usually "Docker Desktop isn't running". |
+| A window flashes open and disappears | Right-click inside the folder → **Open in Terminal**, type `.\start.bat`, press Enter. The message then stays on screen — usually "Docker Desktop isn't running" (or "Podman isn't ready" for Podman). |
 | *"Virtualization support not enabled"*, or a **WSL 2** error | See section 2, *"Windows only: turning on virtualisation"*. |
 | *`bash` is not recognised* / double-clicking does nothing | Git for Windows isn't installed — it's the launcher. |
 | *"Cannot connect to the Docker daemon"* | Docker Desktop isn't started, or hasn't finished starting. |
@@ -260,15 +312,27 @@ Still stuck? Restart the computer. Genuinely — it fixes Docker more often than
 | `docker: command not found` | Install **Docker Engine** plus the Compose plugin — not Docker Desktop. |
 | `docker compose` unknown but `docker-compose` works | That's Compose v1. The labs need the v2 plugin. |
 
+### Podman
+
+| What you see | What it means |
+|---|---|
+| `podman: command not found` | Install Podman (section 1) and reopen the terminal. |
+| *Cannot connect to the Podman socket* / machine not running | macOS/Windows: `podman machine start`. Linux: check `podman info`. |
+| `podman compose` not found | Install `podman-compose`, or Docker Compose v2 for Podman's socket. |
+| *permission denied* on a bind mount, or FUSE/`ewfmount` fails | Use **rootful** Podman: `podman machine set --rootful`, then restart the machine. |
+| Network/routing modules (06, 07, 11) fail with permission errors | Same — those need rootful Podman (or run as root on Linux). |
+| *exec format error* on Apple Silicon | An `amd64` image needs binfmt/`qemu-user-static`; install it in the Podman machine. |
+| `podman` commands need `sudo` on Linux | That is rootful Podman. Rootless is safer; only the networking modules require rootful. |
+
 ### Everything else
 
 | Symptom | Fix |
 |---|---|
-| A container exits immediately | Check its logs: `docker logs <name>`. |
+| A container exits immediately | Check its logs: `docker logs <name>` or `podman logs <name>`. |
 | Ports already in use | Another lab is still running — `quit` out of it, or `make stop`. |
-| Build fails with `xattr … operation not permitted` | You're on an exFAT drive — prefix the command with `DOCKER_BUILDKIT=0`. |
+| Build fails with `xattr … operation not permitted` | You're on an exFAT drive with Docker — prefix the command with `DOCKER_BUILDKIT=0`. Podman does not use BuildKit, so it is usually unaffected. |
 | Downloads fail or time out | A VPN or restrictive network is blocking the image registry. Try without the VPN, or on campus. |
-| Out of disk space | `docker system prune` reclaims space from old containers and images. |
+| Out of disk space | `docker system prune` or `podman system prune` reclaims space from old containers and images. |
 
 **Anything else: bring it to the lab and we'll sort it out in the room.** You never lose lab work
-to a broken laptop — the machines in 402.211 have Docker installed and ready to go.
+to a broken laptop — the machines in 402.211 have Docker or Podman installed and ready to go.
