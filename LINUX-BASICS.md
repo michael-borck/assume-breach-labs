@@ -28,6 +28,14 @@ That's **who** you are `@` **which machine** `:` **which directory you're standi
 user. The `~` is shorthand for your **home directory**. Glance at the prompt whenever you're
 unsure — it answers "who am I and where am I?" before you ask.
 
+## Two windows are enough
+
+Keep one terminal open for commands and `ssh`, and one **Files** window open on your work folder.
+In the terminal, `ssh fileserver` moves you to another machine and `exit` comes back. Edit `.env`
+files in the desktop text editor: right-click the file in Files and choose **Open With**. Write
+`.docx` reports in LibreOffice Writer. You do not need a second terminal, and you do not need to
+fight an editor in the terminal.
+
 ## Where am I? Moving around
 
 ```
@@ -82,12 +90,13 @@ Inside `less` (and `man`): **space** or arrow keys to move, **`/text`** then Ent
 
 ## Editing a file
 
-```
-nano answers.md
-```
+Use the desktop text editor for plain-text files such as `.env`: open the folder in **Files**,
+right-click the file, choose **Open With**, and pick the text editor. Save as plain text. Use
+LibreOffice Writer for `.docx` reports.
 
-Type normally. **Ctrl-O** then Enter saves ("write **O**ut"); **Ctrl-X** exits. The shortcuts
-are printed along the bottom of the screen — `^` means Ctrl. That's the whole editor.
+If you prefer the terminal, `nano answers.md` works. Type normally. **Ctrl-O** then Enter saves
+("write **O**ut"); **Ctrl-X** exits. The shortcuts are printed along the bottom of the screen — `^`
+means Ctrl. That's the whole editor.
 
 ## Everyday housekeeping
 
@@ -225,7 +234,7 @@ you might need, so it doubles as a guided tour.
 | `less file` | page through a file (`q` quits, `/` searches) |
 | `sha256sum file` | print the file's fingerprint (checksum / hash) |
 | `man cmd` | manual for a command (`q` quits) |
-| `nano file` | edit a file (Ctrl-O save, Ctrl-X exit) |
+| `nano file` | edit a file in the terminal (Ctrl-O save, Ctrl-X exit); the desktop text editor is easier |
 | `mkdir` / `cp` / `mv` / `rm` | make dir / copy / move-rename / delete |
 | `chmod 640 file` | change permissions (numeric or `g+w` style) |
 | `chown user:group file` | change owner and group |
