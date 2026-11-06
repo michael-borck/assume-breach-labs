@@ -9,3 +9,7 @@
 
 # Local env overrides
 .env
+
+# Offline image packs
+images/
+dist/
