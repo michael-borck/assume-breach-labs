@@ -1,5 +1,7 @@
 #!/bin/sh
 # The untrusted hop between the two networks: forwards traffic and can sniff it.
+# Set forwarding here, not via compose `sysctls:`: rootless Podman rejects
+# privileged sysctls at creation, but this runs in the container netns.
 sysctl -w net.ipv4.ip_forward=1 >/dev/null 2>&1 || true
 
 # Name resolution for the lab hosts + start the SSH server (so the student can

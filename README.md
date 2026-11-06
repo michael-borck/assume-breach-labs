@@ -26,9 +26,12 @@ You don't need to know Docker. Install Docker Desktop or Podman (see
 ```
 
 Podman works too: `./start.sh` detects it, or set `CONTAINER_ENGINE=podman`.
+The launcher creates the 07/11 Podman networks with `isolate=false` before
+Compose starts, so their routed segments are not isolated from each other.
 Rootless Podman runs most modules; if a networking module (06, 07 or 11) reports
 permission errors, switch to rootful Podman (`podman machine set --rootful` on
-macOS/Windows).
+macOS/Windows). On Podman use `./start.sh`: the Makefile targets assume the
+compose front-end preserves `driver_opts`, which not every provider does.
 
 (On Windows: install [Git for Windows](https://git-scm.com/download/win) once, then double-click `start.bat`.)
 

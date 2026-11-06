@@ -4,7 +4,9 @@
 # the ruleset themselves.
 set -e
 
-# ip_forward is normally set via the compose `sysctls:` key; this is a fallback.
+# Set ip_forward here, not via compose `sysctls:`: rootless Podman rejects
+# privileged sysctls during container creation, but this runs inside the
+# container's own network namespace.
 sysctl -w net.ipv4.ip_forward=1 >/dev/null 2>&1 || true
 
 # Name resolution for the lab hosts + start the SSH server (shared with the pcs).

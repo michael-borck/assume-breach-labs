@@ -271,8 +271,8 @@ services:
     hostname: eavesdropper
     profiles: ["module-11"]
     cap_add: ["NET_ADMIN", "NET_RAW"]
-    sysctls:
-      - net.ipv4.ip_forward=1
+    # ip_forward is set by the entrypoint, not by compose sysctls: a rootless
+    # Podman container is not allowed to set it during creation.
     command: ["/eavesdropper-entrypoint.sh"]
     networks:
       m11-office:
@@ -304,8 +304,8 @@ services:
     hostname: firewall
     profiles: ["module-07"]
     cap_add: ["NET_ADMIN"]
-    sysctls:
-      - net.ipv4.ip_forward=1
+    # ip_forward is set by the entrypoint, not by compose sysctls: a rootless
+    # Podman container is not allowed to set it during creation.
     command: ["/firewall-entrypoint.sh"]
     networks:
       m07-inside:

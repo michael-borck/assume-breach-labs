@@ -24,6 +24,12 @@ set -uo pipefail
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOGFILE="$(mktemp -t lab-console.XXXXXX)"
 
+# Compose files. prepare_podman_networks() appends a generated override for
+# modules that route between networks, so Compose reuses the networks we create
+# natively instead of recreating them without the isolate=false option.
+COMPOSE_FILES=(-f "$PROJECT_ROOT/docker-compose.yml")
+PODMAN_NET_OVERRIDE=""
+
 # --- container engine ------------------------------------------------------
 # Docker by default; Podman fully supported. The compose file is engine-neutral
 # (an OCI-era spec, not a Docker artefact), so there is ONE set of labs either
@@ -69,6 +75,64 @@ ensure_podman_socket() {
     fi
     [ -S "$sock" ] || return 1
     export DOCKER_HOST="unix://$sock"
+}
+
+# --- Podman network plumbing ------------------------------------------------
+# Netavark 2 (Podman 6) isolates bridge networks from each other by default.
+# Modules 07 and 11 route through a multi-homed container, so their networks
+# must be created with isolate=false. Do not rely on the compose front-end to
+# pass driver_opts through: podman-compose versions differ, and the Docker
+# Compose -> Podman socket path drops it. Create the networks natively and give
+# Compose an override that treats them as external. Docker needs none of this.
+prepare_podman_networks() {
+    [ "$ENGINE" = podman ] || return 0
+
+    local nets name subnet opts subnets
+    case "$MODULE_NO" in
+        07) nets='m07-inside 10.1.1.0/24
+m07-outside 10.1.2.0/24' ;;
+        11) nets='m11-office 10.11.0.0/24
+m11-datacentre 10.11.1.0/24' ;;
+        *) return 0 ;;
+    esac
+
+    PODMAN_NET_OVERRIDE="$(mktemp "${TMPDIR:-/tmp}/assume-breach-networks.XXXXXX.yml")"
+    trap 'rm -f "$PODMAN_NET_OVERRIDE"' EXIT
+    {
+        echo "networks:"
+        while read -r name subnet; do
+            [ -n "$name" ] || continue
+            printf '  %s:\n    external: true\n' "$name"
+        done <<EOF
+$nets
+EOF
+    } > "$PODMAN_NET_OVERRIDE"
+    COMPOSE_FILES+=(-f "$PODMAN_NET_OVERRIDE")
+
+    while read -r name subnet; do
+        [ -n "$name" ] || continue
+        if "$ENGINE" network exists "$name" >/dev/null 2>&1; then
+            opts="$("$ENGINE" network inspect "$name" --format '{{json .Options}}' 2>/dev/null || echo '{}')"
+            subnets="$("$ENGINE" network inspect "$name" --format '{{range .Subnets}}{{.Subnet}} {{end}}' 2>/dev/null || true)"
+            if printf '%s' "$opts" | grep -q '"isolate":"false"' \
+               && printf '%s' "$subnets" | grep -qw "$subnet"; then
+                continue
+            fi
+            printf "${C_WARN}Repairing the Podman network %s (isolation or subnet was wrong)...${NC}\n" "$name"
+            # The lab state is in the images; only this module's containers need
+            # to be removed before the network can be recreated.
+            # shellcheck disable=SC2046  # word splitting is intended here
+            "$ENGINE" rm -f $("$ENGINE" ps -aq --filter "name=^m${MODULE_NO}-") >/dev/null 2>&1 || true
+            if ! "$ENGINE" network rm "$name" >/dev/null 2>&1; then
+                printf "${C_ERR}Could not repair the Podman network %s: another container is using it.${NC}\n" "$name"
+                exit 1
+            fi
+        fi
+        "$ENGINE" network create --opt isolate=false --subnet "$subnet" "$name" >/dev/null 2>&1 \
+            || { printf "${C_ERR}Could not create the Podman network %s.${NC}\n" "$name"; exit 1; }
+    done <<EOF
+$nets
+EOF
 }
 
 # Resolve the compose front-end. Runs twice when needed: once at start-up,
@@ -303,10 +367,10 @@ report_if_stale() {
 compose_up() {
     (
         cd "$PROJECT_ROOT"
-        "${COMPOSE[@]}" --profile "module-${MODULE_NO}" pull || true
-        if ! "${COMPOSE[@]}" --profile "module-${MODULE_NO}" up -d; then
-            "${COMPOSE[@]}" --profile "module-${MODULE_NO}" build \
-                && "${COMPOSE[@]}" --profile "module-${MODULE_NO}" up -d
+        "${COMPOSE[@]}" "${COMPOSE_FILES[@]}" --profile "module-${MODULE_NO}" pull || true
+        if ! "${COMPOSE[@]}" "${COMPOSE_FILES[@]}" --profile "module-${MODULE_NO}" up -d; then
+            "${COMPOSE[@]}" "${COMPOSE_FILES[@]}" --profile "module-${MODULE_NO}" build \
+                && "${COMPOSE[@]}" "${COMPOSE_FILES[@]}" --profile "module-${MODULE_NO}" up -d
         fi
     ) >"$LOGFILE" 2>&1 &
     local pid=$!
@@ -456,7 +520,7 @@ teardown_prompt() {
         # output goes to $LOGFILE, the student saw "Lab stopped." while containers
         # (m02-attacker with root+NET_RAW, the m07/m11 nodes with NET_ADMIN) kept
         # running — on a shared lab PC, across sessions. Verified on Compose v2.
-        [Yy]*) ( cd "$PROJECT_ROOT" && "${COMPOSE[@]}" --profile "module-${MODULE_NO}" stop ) >"$LOGFILE" 2>&1
+        [Yy]*) ( cd "$PROJECT_ROOT" && "${COMPOSE[@]}" "${COMPOSE_FILES[@]}" --profile "module-${MODULE_NO}" stop ) >"$LOGFILE" 2>&1
                if "$ENGINE" ps -q --filter "name=^m${MODULE_NO}-" | grep -q .; then
                    printf "${C_WARN}Some lab machines are still running. Use 'make down' to force them off.${NC}\n"
                else
@@ -522,6 +586,7 @@ start_version_check   # backgrounded; result is read after the lab is up
 banner
 need_docker
 require_compose
+prepare_podman_networks
 if [ -z "$ANALYST" ] && [ -t 0 ]; then
     read -r -p "Enter your name (for the lab session): " ANALYST
 fi
